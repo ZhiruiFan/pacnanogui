@@ -116,7 +116,7 @@ void Model::setupManager() {
     //  model list view
     itemModel = new QStandardItemModel(this);
     //  create the manager
-    mng = new Manager(this, "Model", ":/icons/model.png", itemModel);
+    mng = new Manager(this, "Model Manager", ":/icons/material.png", itemModel);
     //  assign the active flag
     isActiveMng = false;
     //  connect the signal and button
@@ -169,12 +169,16 @@ QStandardItemModel* Model::getModelList() { return itemModel; }
 /*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *  set currently operated model  */
 void Model::setOperatedModel(int idx) {
-    //  get the current model index
-    item = itemModel->item(idx, 0);
-    //  get the current model
-    proCur = item->data(Qt::UserRole).value<ModelProperty*>();
-    //  update the set object
-    set = proCur->set;
+    if (idx >= 0) {
+        //  get the current model index
+        item = itemModel->item(idx, 0);
+        //  get the current model
+        proCur = item->data(Qt::UserRole).value<ModelProperty*>();
+        //  update the set object
+        set = proCur->set;
+    } else {
+        set = proNew->set;
+    }
 }
 
 /*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -444,12 +448,36 @@ void Model::ModelProperty::saveDatabase(QString& workDir) {
 
 /*  ############################################################################
  *  show Set create dialog */
-void Model::createSetNode() { set->createSetNode(); }
+void Model::createSetNode() {
+    if (itemModel->rowCount() == 0) {
+        msgbox->showMessage(0, ":/icons/material.png", "Set creation",
+                            "No model is detected. Please create a new one "
+                            "before the node set creation can be used.");
+    } else {
+        set->createSetNode();
+    }
+}
 
 /*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *  show Set create dialog  */
-void Model::createSetElem() { set->createSetElem(); }
+void Model::createSetElem() {
+    if (itemModel->rowCount() == 0) {
+        msgbox->showMessage(0, ":/icons/material.png", "Set creation",
+                            "No model is detected. Please create a new one "
+                            "before the element set creation can be used.");
+    } else {
+        set->createSetElem();
+    }
+}
 
 /*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *  show Set manager  */
-void Model::showSetManager() { set->showManager(); }
+void Model::showSetManager() {
+    if (itemModel->rowCount() == 0) {
+        msgbox->showMessage(0, ":/icons/material.png", "Set creation",
+                            "No model is detected. Please create a new one "
+                            "before the set manager can be used.");
+    } else {
+        set->showManager();
+    }
+}

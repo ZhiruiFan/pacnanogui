@@ -98,6 +98,7 @@ private:
     void setupElecMag();        // electromagnetic
     void setupOthers();         // others
     void setupManager();        // material manager object
+    void setupRename();         // rename dialog
 
     /*  setupMatProListview: create the listview model for the created material
      * properties*/

@@ -32,7 +32,7 @@ Project::Project(QWidget *parent) : QDialog(parent), ui(new Ui::Project) {
 
     /*  initialize the database  */
     db      = QSqlDatabase::addDatabase("QSQLITE", "PROJECT");
-    name    = new QString("Project-1");
+    name    = new QString("Project-0");
     workDir = new QString(QDir::currentPath());
     pyScr   = "*.py";
     saveProject();
@@ -73,6 +73,12 @@ Project::Project(QWidget *parent) : QDialog(parent), ui(new Ui::Project) {
             &Project::writeProjectNew);
     connect(ui->btnOkOld, &QPushButton::clicked, this,
             &Project::writeProjectOld);
+
+    //  Item model to show the project name in the pacnano gui
+    itemModel = new QStandardItemModel(this);
+    item      = new QStandardItem(*name);
+    itemModel->appendRow(item);
+    item = nullptr;
 }
 /*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *  destructor: destroy the Project object  */
@@ -152,6 +158,10 @@ void Project::writeProjectNew() {
     if (ui->useAsciiNew->isChecked()) dbType = 0;
     if (ui->useBinNew->isChecked()) dbType = 1;
     if (ui->useHdf5New->isChecked()) dbType = 2;
+    //  update the item model
+    item = itemModel->item(0, 0);
+    item->setText(*name);
+    item = nullptr;
     //  close the dialog
     accept();
 }

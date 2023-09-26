@@ -597,7 +597,7 @@ QTreeView::branch:open:has-children:has-siblings  {
                 </widget>
                </item>
                <item>
-                <widget class="QComboBox" name="comboBox">
+                <widget class="QComboBox" name="projectName">
                  <property name="minimumSize">
                   <size>
                    <width>100</width>
@@ -1091,13 +1091,13 @@ QTreeView::branch:open:has-children:has-siblings  {
                  </widget>
                 </item>
                 <item>
-                 <widget class="QToolButton" name="btnMatManage">
+                 <widget class="QToolButton" name="btnMatCreate">
                   <property name="text">
                    <string>...</string>
                   </property>
                   <property name="icon">
                    <iconset resource="icons.qrc">
-                    <normaloff>:/icons/material.png</normaloff>:/icons/material.png</iconset>
+                    <normaloff>:/icons/matCreate.png</normaloff>:/icons/matCreate.png</iconset>
                   </property>
                   <property name="iconSize">
                    <size>
@@ -1111,13 +1111,13 @@ QTreeView::branch:open:has-children:has-siblings  {
                  </widget>
                 </item>
                 <item>
-                 <widget class="QToolButton" name="btnMatCreate">
+                 <widget class="QToolButton" name="btnMatManage">
                   <property name="text">
                    <string>...</string>
                   </property>
                   <property name="icon">
                    <iconset resource="icons.qrc">
-                    <normaloff>:/icons/matCreate.png</normaloff>:/icons/matCreate.png</iconset>
+                    <normaloff>:/icons/material.png</normaloff>:/icons/material.png</iconset>
                   </property>
                   <property name="iconSize">
                    <size>

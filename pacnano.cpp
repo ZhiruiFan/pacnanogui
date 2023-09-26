@@ -118,6 +118,9 @@ void pacnano::setupProject() {
     connect(ui->btnProjOld, &QPushButton::clicked, project,
             &Project::createProjectOld);
 
+    //  set the the projectname in Project ComboBox
+    ui->projectName->setModel(project->getItemModel());
+
     //  save project
     connect(ui->btnProjSave, &QToolButton::clicked, project,
             &Project::saveProject);
@@ -184,10 +187,12 @@ void pacnano::setupMaterialCreation() {
     material = new Material;
     //  Function: create new material
     connect(ui->actTopMatManage, &QAction::triggered, material,
-            &Material::create);
+            &Material::manager);
     connect(ui->btnMatManage, &QToolButton::clicked, material,
-            &Material::create);
+            &Material::manager);
     //  Function: open the material manager
-    connect(ui->btnMatCreate, &QToolButton::clicked, material, &QDialog::show);
-    connect(ui->actTopMatCreate, &QAction::triggered, material, &QDialog::show);
+    connect(ui->btnMatCreate, &QToolButton::clicked, material,
+            &Material::create);
+    connect(ui->actTopMatCreate, &QAction::triggered, material,
+            &Material::create);
 }

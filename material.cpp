@@ -37,6 +37,10 @@ Material::Material(QWidget* parent) : QDialog(parent), ui(new Ui::Material) {
     //  setup validator
     validator = new QDoubleValidator(this);
 
+    //  create the new material property
+    index  = 0;
+    proNew = new Property(index);
+
     //  create listview model
     setupMatProListview();
 
@@ -46,6 +50,8 @@ Material::Material(QWidget* parent) : QDialog(parent), ui(new Ui::Material) {
     setupThermoPro();      // thermal properties
     setupElecMag();        // electromagnetic
     setupOthers();         // others
+    setupManager();        // setup the manager
+    setupRename();         // setup the rename dialog
     //  set an empty penal
     ui->matProperty->setCurrentIndex(0);
 
@@ -91,24 +97,23 @@ Material::~Material() {
  *      create the listview model for the created material properties  */
 void Material::setupMatProListview() {
     //  create and assign the item model
-    itemPro     = new QStandardItemModel;
-    selectModel = new QItemSelectionModel(itemPro);
+    itemPro = new QStandardItemModel(this);
     //  create the material listview
     ui->matProList->setModel(itemPro);
-    ui->matProList->setSelectionModel(selectModel);
+    selectModel = ui->matProList->selectionModel();
 
     // set single selection for listview
     ui->matProList->setSelectionMode(QAbstractItemView::SingleSelection);
     ui->matProList->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     //  link to delete button
-    ui->btnDelete->setDisabled(true);
     connect(selectModel, &QItemSelectionModel::selectionChanged, this,
             [&](const QItemSelection& selected) {
                 ui->btnDelete->setEnabled(!selected.isEmpty());
             });
     connect(ui->btnDelete, &QToolButton::clicked, this,
             &Material::delSelectedMatProItem);
+    ui->btnDelete->setEnabled(false);
     connect(ui->matProList, &QListView::clicked, this, [&]() {
         //  get the current index in the property list view
         QModelIndex index = selectModel->currentIndex();
@@ -258,7 +263,8 @@ void Material::setupManager() {
     //  create the listview related model
     itemModel = new QStandardItemModel(this);
     //  create the manager
-    mng = new Manager(this, "Model Sets", ":/icons/set.png", itemModel);
+    mng = new Manager(this, "Material Manager", ":/icons/material.png",
+                      itemModel);
     //  assign the active flag
     isActiveMng = false;
 
@@ -269,6 +275,15 @@ void Material::setupManager() {
     connect(mng, &Manager::signalDelete, this, &Material::remove);
     connect(mng, &Manager::shown, this, [&]() { isActiveMng = true; });
     connect(mng, &Manager::closed, this, [&]() { isActiveMng = false; });
+}
+
+/*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ *  setup Rename dialog  */
+void Material::setupRename() {
+    //  rename dialog
+    rename = new Rename(this);
+    //  connect OK button of the dialog
+    connect(rename, &QDialog::accepted, this, &Material::getNewName);
 }
 
 /*  ############################################################################
@@ -301,7 +316,7 @@ void Material::addItemDen() {
             msgbox.setWindowIcon(QIcon(":/icons/pacnano.png"));
             msgbox.show();
         } else {
-            itemModel->appendRow(new QStandardItem("Density"));
+            itemPro->appendRow(new QStandardItem("Density"));
             proCur->den->updateAssign(true);
         }
     }
@@ -322,7 +337,7 @@ void Material::addItemLinear() {
             msgbox.setWindowIcon(QIcon(":/icons/pacnano.png"));
             msgbox.show();
         } else {
-            itemModel->appendRow(new QStandardItem("Linear Material"));
+            itemPro->appendRow(new QStandardItem("Linear Material"));
             proCur->linear->updateAssign(true);
         }
     }
@@ -343,7 +358,7 @@ void Material::addItemNeo() {
             msgbox.setWindowIcon(QIcon(":/icons/pacnano.png"));
             msgbox.show();
         } else {
-            itemModel->appendRow(new QStandardItem("Neo-Hookean Material"));
+            itemPro->appendRow(new QStandardItem("Neo-Hookean Material"));
             proCur->neo->updateAssign(true);
         }
     }
@@ -364,7 +379,7 @@ void Material::addItemThermo() {
                 msgbox.setWindowIcon(QIcon(":/icons/pacnano.png"));
                 msgbox.show();
             } else {
-                itemModel->appendRow(new QStandardItem("Thermal Conduction"));
+                itemPro->appendRow(new QStandardItem("Thermal Conduction"));
                 proCur->conduct->updateAssign(true);
             }
         }
@@ -380,7 +395,7 @@ void Material::addItemThermo() {
                 msgbox.setWindowIcon(QIcon(":/icons/pacnano.png"));
                 msgbox.show();
             } else {
-                itemModel->appendRow(new QStandardItem("Thermal Expansion"));
+                itemPro->appendRow(new QStandardItem("Thermal Expansion"));
                 proCur->expan->updateAssign(true);
             }
         }
@@ -565,44 +580,36 @@ void Material::remove(int idx) {
 /*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *  delMatProItem: delete the selected material item  */
 void Material::delSelectedMatProItem() {
-    //  get the selected item in listview
-    QModelIndexList items = selectModel->selectedIndexes();
-
     //  assign the temporary model property
     proCur = editmode ? proOld : proNew;
-
-    //  remove the selected items
-    for (const QModelIndex& index : items) {
-        QString name = index.data().toString();
-        itemPro->takeItem(index.row());
-        itemPro->removeRow(index.row());
-
-        //  update density
-        switch (map[name]) {
-            case 0:
-                proCur->den->updateAssign(false);
-                resetDensity();
-                break;
-            case 1:
-                proCur->linear->updateAssign(false);
-                resetLinear();
-                break;
-            case 2:
-                proCur->neo->updateAssign(false);
-                resetNeo();
-                break;
-            case 3:
-                proCur->expan->updateAssign(false);
-                resetExpan();
-                break;
-            case 4:
-                proCur->conduct->updateAssign(false);
-                resetConduct();
-        }
+    //  get the item
+    item = itemPro->itemFromIndex(selectModel->currentIndex());
+    //  get the name of the item
+    QString text = item->text();
+    // remove the item
+    itemPro->removeRow(item->row());
+    //  update the property
+    switch (map[text]) {
+        case 0:
+            proCur->den->updateAssign(false);
+            resetDensity();
+            break;
+        case 1:
+            proCur->linear->updateAssign(false);
+            resetLinear();
+            break;
+        case 2:
+            proCur->neo->updateAssign(false);
+            resetNeo();
+            break;
+        case 3:
+            proCur->expan->updateAssign(false);
+            resetExpan();
+            break;
+        case 4:
+            proCur->conduct->updateAssign(false);
+            resetConduct();
     }
-
-    //  remove the tems from selection model
-    selectModel->clearSelection();
 }
 
 /*  ############################################################################

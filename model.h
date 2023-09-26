@@ -155,8 +155,7 @@ protected:
 /*  class ModelProperty:
  *  the class to define the model property, i.e., the components, such as Set,
  *  Material and so on, over the model  */
-class Model::ModelProperty : public QObject {
-    Q_OBJECT
+class Model::ModelProperty {
 public:
     bool ifUseNew;     // flag to determine the source to create a Model
     QString* name;     // the name of the model
@@ -182,7 +181,12 @@ public:
     ModelProperty(int _index, QString*& projName, QString*& workPah);
 
     /*  destructor of the object  */
-    ~ModelProperty() { project = nullptr; };
+    ~ModelProperty() {
+        project = nullptr;
+        workDir = nullptr;
+        delete name;
+        name = nullptr;
+    };
 
     /*  save model information to the local database */
     void saveDatabase(QString& _workDir);

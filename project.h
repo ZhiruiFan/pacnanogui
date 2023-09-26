@@ -52,6 +52,9 @@ private:
     QString dbname;      // the name of database
     MessageBox* msgbox;  // message box to echo information
 
+    //  some other needed variables
+    QStandardItemModel* itemModel;  // the item model of the combobox in pacnano
+    QStandardItem* item;            // item in ItemModel
 public:
     /*  getDatabase: get the database object  */
     void getDatabase(QString& dbname);
@@ -61,6 +64,9 @@ public:
 
     /*  getWorkDirectory: get the work directory of the project  */
     QString*& getWorkDirectory() { return workDir; }
+
+    /*  getItemModel: get the item model object in Project  */
+    QStandardItemModel* getItemModel() { return itemModel; }
 
 private slots:
     /*  set information from OPEN dialog to the current */
