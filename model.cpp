@@ -450,7 +450,7 @@ void Model::ModelProperty::saveDatabase(QString& workDir) {
  *  show Set create dialog */
 void Model::createSetNode() {
     if (itemModel->rowCount() == 0) {
-        msgbox->showMessage(0, ":/icons/material.png", "Set creation",
+        msgbox->showMessage(0, ":/icons/node.png", "Set creation",
                             "No model is detected. Please create a new one "
                             "before the node set creation can be used.");
     } else {
@@ -462,7 +462,7 @@ void Model::createSetNode() {
  *  show Set create dialog  */
 void Model::createSetElem() {
     if (itemModel->rowCount() == 0) {
-        msgbox->showMessage(0, ":/icons/material.png", "Set creation",
+        msgbox->showMessage(0, ":/icons/element.png", "Set creation",
                             "No model is detected. Please create a new one "
                             "before the element set creation can be used.");
     } else {
@@ -474,7 +474,7 @@ void Model::createSetElem() {
  *  show Set manager  */
 void Model::showSetManager() {
     if (itemModel->rowCount() == 0) {
-        msgbox->showMessage(0, ":/icons/material.png", "Set creation",
+        msgbox->showMessage(0, ":/icons/set.png", "Set creation",
                             "No model is detected. Please create a new one "
                             "before the set manager can be used.");
     } else {

@@ -233,13 +233,13 @@ void Set::saveModelDialog() {
 bool Set::confimDialog() {
     //  the name of the model
     if (ui->name->text() == "") {
-        msgbox->showMessage(1, ":/icons/model.png", "Model",
+        msgbox->showMessage(1, ":/icons/set.png", "Model",
                             "Please input the \"name\" of the model.");
         return false;
     }
     //  the input source
     if (ui->source->text() == "") {
-        msgbox->showMessage(1, ":/icons/model.png", "Model",
+        msgbox->showMessage(1, ":/icons/set.png", "Model",
                             "Please input the \"source\" of the model.");
         return false;
     }

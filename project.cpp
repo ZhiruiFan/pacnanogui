@@ -35,7 +35,6 @@ Project::Project(QWidget *parent) : QDialog(parent), ui(new Ui::Project) {
     name    = new QString("Project-0");
     workDir = new QString(QDir::currentPath());
     pyScr   = "*.py";
-    saveProject();
 
     /*  Open dialog  */
     openDir = new Open(this, 0);
@@ -150,6 +149,47 @@ void Project::createProjectOld() {
 /*  ############################################################################
  *  writeProjectNew: get  dialog information and write them to variables*/
 void Project::writeProjectNew() {
+    //  check the data completation of the project
+    switch (openFlag) {
+        case 0:
+            //  check the project name
+            if (ui->projNameNew->text().isEmpty()) {
+                msgbox->showMessage(0, ":/icons/project.png",
+                                    "Project Creation",
+                                    "Please input the name of the project.");
+                return;
+            }
+            //  check the workdir
+            if (ui->workDirNew->text().isEmpty()) {
+                msgbox->showMessage(
+                    0, ":/icons/project.png", "Project Creation",
+                    "Please select or input the path of work directory.");
+                return;
+            }
+            if (ui->pyScrNew->text().isEmpty()) {
+                msgbox->showMessage(
+                    0, ":/icons/project.png", "Project Creation",
+                    "Please select or input the python script.");
+                return;
+            }
+            break;
+        case 1:
+            if (ui->projNameOld->text().isEmpty()) {
+                msgbox->showMessage(0, ":/icons/project.png",
+                                    "Project Creation",
+                                    "Please input the name of the project.");
+                return;
+            }
+            if (ui->workDirOld->text().isEmpty()) {
+                msgbox->showMessage(
+                    0, ":/icons/project.png", "Project Creation",
+                    "Please select or input the path of work directory.");
+                return;
+            }
+    }
+
+    //  check the path of python script
+
     //  set the basic project information
     *workDir = ui->workDirNew->text();
     *name    = ui->projNameNew->text();
@@ -330,7 +370,7 @@ void Project::loadProject() {
 void Project::deleteProject() {
     //  prepare the message box
     msgbox->showMessage(
-        0, ":/icons/project_sve.png", "Remove Project",
+        1, ":/icons/project_sve.png", "Remove Project",
         "The project \"" + *name + "\"will be removed.\n Continue or not?");
     //  handle the "delete" signla
     if (choice) {

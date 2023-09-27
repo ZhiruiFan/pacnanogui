@@ -40,6 +40,7 @@ Remote::Remote(QWidget *parent) : QDialog(parent), ui(new Ui::Remote) {
 
     //  set the format of password
     ui->passWd->setEchoMode(QLineEdit::Password);
+    ui->userName->setEchoMode(QLineEdit::Normal);
 }
 
 Remote::~Remote() { delete ui; }
