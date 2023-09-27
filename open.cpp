@@ -192,14 +192,16 @@ void Open::showListView() {
 /*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *  SLOT: double click to open a folder in list  */
 void Open::openListView(const QModelIndex &index) {
-    //  open the folder
-    pathCur   = file->fileInfo(index).absoluteFilePath();
-    rootIndex = file->setRootPath(pathCur);
-    ui->listView->setRootIndex(rootIndex);
-    ui->btnBack->setDisabled(false);
+    if (file->isDir(index)) {
+        //  open the folder
+        pathCur   = file->fileInfo(index).absoluteFilePath();
+        rootIndex = file->setRootPath(pathCur);
+        ui->listView->setRootIndex(rootIndex);
+        ui->btnBack->setDisabled(false);
 
-    //  update the folder name
-    ui->fileName->setText(pathCur);
+        //  update the folder name
+        ui->fileName->setText(pathCur);
+    }
 }
 
 /*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -246,14 +248,17 @@ void Open::showTreeView() {
 /*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *  SLOT: click and open a folder in tree  */
 void Open::openTreeView(const QModelIndex &index) {
-    //  open folder
-    pathCur   = file->fileInfo(index).absoluteFilePath();
-    rootIndex = file->setRootPath(pathCur);
-    ui->treeView->setRootIndex(rootIndex);
-    ui->btnBack->setDisabled(false);
+    //  if the index is directory
+    if (file->isDir(index)) {
+        //  open folder
+        pathCur   = file->fileInfo(index).absoluteFilePath();
+        rootIndex = file->setRootPath(pathCur);
+        ui->treeView->setRootIndex(rootIndex);
+        ui->btnBack->setDisabled(false);
 
-    //  update the folder name
-    ui->fileName->setText(pathCur);
+        //  update the folder name
+        ui->fileName->setText(pathCur);
+    }
 }
 
 /*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -301,14 +306,16 @@ void Open::showTableView() {
 /*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *  SLOT: click and open a folder in tree  */
 void Open::openTableView(const QModelIndex &index) {
-    //  open folder
-    pathCur   = file->fileInfo(index).absoluteFilePath();
-    rootIndex = file->setRootPath(pathCur);
-    ui->tableView->setRootIndex(rootIndex);
-    ui->btnBack->setEnabled(true);
+    if (file->isDir(index)) {
+        //  open folder
+        pathCur   = file->fileInfo(index).absoluteFilePath();
+        rootIndex = file->setRootPath(pathCur);
+        ui->tableView->setRootIndex(rootIndex);
+        ui->btnBack->setEnabled(true);
 
-    //  update the folder name
-    ui->fileName->setText(pathCur);
+        //  update the folder name
+        ui->fileName->setText(pathCur);
+    }
 }
 
 /*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

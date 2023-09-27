@@ -16,6 +16,9 @@
 
 #include "remote.h"
 
+#include <QRegularExpression>
+#include <QRegularExpressionValidator>
+
 #include "ui_remote.h"
 
 Remote::Remote(QWidget *parent) : QDialog(parent), ui(new Ui::Remote) {
@@ -25,6 +28,18 @@ Remote::Remote(QWidget *parent) : QDialog(parent), ui(new Ui::Remote) {
     /*  CONNECTIONS  */
     //  calcel button
     connect(ui->btnCancel, &QPushButton::clicked, this, &QDialog::close);
+
+    //  set the data format of ip address
+    QRegularExpression ipRegExp(
+        "^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
+        "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
+        "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\."
+        "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$");
+    QRegularExpressionValidator ipValidator(ipRegExp, ui->ipAddr);
+    ui->ipAddr->setValidator(&ipValidator);
+
+    //  set the format of password
+    ui->passWd->setEchoMode(QLineEdit::Password);
 }
 
 Remote::~Remote() { delete ui; }

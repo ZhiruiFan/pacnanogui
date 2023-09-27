@@ -48,7 +48,7 @@
           </property>
           <property name="sizeHint" stdset="0">
            <size>
-            <width>13</width>
+            <width>10</width>
             <height>20</height>
            </size>
           </property>
@@ -121,7 +121,7 @@
          </spacer>
         </item>
         <item>
-         <widget class="QLineEdit" name="lineIPAddr">
+         <widget class="QLineEdit" name="ipAddr">
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -230,7 +230,7 @@
          </spacer>
         </item>
         <item>
-         <widget class="QLineEdit" name="lineEdit_2">
+         <widget class="QLineEdit" name="userName">
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -348,7 +348,7 @@
          </spacer>
         </item>
         <item>
-         <widget class="QLineEdit" name="lineEdit_3">
+         <widget class="QLineEdit" name="passWd">
           <property name="minimumSize">
            <size>
             <width>0</width>
