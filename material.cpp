@@ -57,7 +57,7 @@ Material::Material(QWidget* parent) : QDialog(parent), ui(new Ui::Material) {
 
     //  button cancel
     connect(ui->btnCancel, &QPushButton::clicked, this, &QDialog::close);
-    connect(ui->btnOk, &QPushButton::clicked, this, &QDialog::accept);
+    connect(ui->btnOk, &QPushButton::clicked, this, &Material::saveMaterial);
 
     //  button discard
     connect(ui->btnDenDiscard, &QPushButton::clicked, this, &Material::discard);
@@ -289,6 +289,10 @@ void Material::setupRename() {
 /*  ############################################################################
  *  create: create the material object  */
 void Material::create() {
+    //  reset the dialog
+    reset();
+    ui->matProperty->setCurrentIndex(0);
+
     //  disable the edit mode
     editmode = false;
 
@@ -420,7 +424,7 @@ void Material::edit(int idx) {
 
     //  recory material density
     if (proOld->den->assigned) {
-        itemModel->appendRow(new QStandardItem("Density"));
+        itemPro->appendRow(new QStandardItem("Density"));
         ui->dataDen->setText(QString::number(proOld->den->data[0]));
         if (proOld->den->flag[0] == 0) {
             ui->massUniform->setChecked(true);
@@ -431,7 +435,7 @@ void Material::edit(int idx) {
 
     //  linear material
     if (proOld->linear->assigned) {
-        itemModel->appendRow(new QStandardItem("Linear Material"));
+        itemPro->appendRow(new QStandardItem("Linear Material"));
         ui->dataLinearModulus->setText(
             QString::number(proOld->linear->data[0]));
         ui->dataLinearPoison->setText(QString::number(proOld->linear->data[1]));
@@ -444,7 +448,7 @@ void Material::edit(int idx) {
 
     //  neo-Hookean material
     if (proOld->neo->assigned) {
-        itemModel->appendRow(new QStandardItem("Neo-Hookean Material"));
+        itemPro->appendRow(new QStandardItem("Neo-Hookean Material"));
         proOld->neo->data[0] = ui->dataNeoModulus->text().toDouble();
         proOld->neo->data[1] = ui->dataNeoPoison->text().toDouble();
         if (ui->selectNeoElastic->isChecked()) {
@@ -456,7 +460,7 @@ void Material::edit(int idx) {
 
     //  thermal conduction
     if (proOld->conduct->assigned) {
-        itemModel->appendRow(new QStandardItem("Thermal Conduction"));
+        itemPro->appendRow(new QStandardItem("Thermal Conduction"));
         if (ui->selectConduct->isChecked()) {
             proOld->conduct->data[0] = ui->dataConduct->text().toDouble();
             proOld->conduct->flag[0] = 1;
@@ -467,7 +471,7 @@ void Material::edit(int idx) {
 
     //  thermal expansion
     if (proOld->expan->assigned) {
-        itemModel->appendRow(new QStandardItem("Thermal Expansion"));
+        itemPro->appendRow(new QStandardItem("Thermal Expansion"));
         if (ui->selectExpan->isChecked()) {
             proOld->expan->data[0] = ui->dataExpan->text().toDouble();
             proOld->expan->flag[0] = 1;
@@ -475,9 +479,10 @@ void Material::edit(int idx) {
             proOld->expan->flag[0] = 0;
         }
     }
-
     //  reset the current index
     ui->matProperty->setCurrentIndex(0);
+    //  show the material creation dialog
+    exec();
 }
 
 /*  ############################################################################
@@ -544,6 +549,7 @@ void Material::saveMaterial() {
         item = new QStandardItem(proCur->name);
         item->setData(QVariant::fromValue(proCur), Qt::UserRole);
         itemModel->appendRow(item);
+        proCur->assigned = true;
         //  assign the item to null and create the new property object
         item   = nullptr;
         proNew = nullptr;
@@ -552,12 +558,10 @@ void Material::saveMaterial() {
     }
     //  assign the temporary ModelProperty object to null
     proCur = nullptr;
+    //  close the dialog
+    accept();
     //  show the mananger dialog if possible
     if (isActiveMng) mng->show();
-
-    //  reset the dialog
-    reset();
-    ui->matProperty->setCurrentIndex(0);
 }
 
 /*  ############################################################################
