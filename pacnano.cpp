@@ -36,6 +36,9 @@ pacnano::pacnano(QWidget *parent) : QMainWindow(parent), ui(new Ui::pacnano) {
     setupModel();             // setup model environment
     setupMaterialCreation();  // material creation
     setupViewportSwitch();    // viewport setting
+
+    /*  openGL widget to show the FEM model  */
+    win = new Render(ui->openGLWidget);
 }
 
 /*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -47,6 +50,7 @@ pacnano::~pacnano() {
     delete openDir;   // pen directory dialog
     delete project;   // project object
     delete material;  // material object
+    delete win;       // render window
 }
 
 /*  ############################################################################

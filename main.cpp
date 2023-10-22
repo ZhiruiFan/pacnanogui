@@ -1,6 +1,9 @@
 #include "pacnano.h"
-
 #include <QApplication>
+#include <QtOpenGLWidgets/QOpenGLWidget>
+#include <vtk-9.3/vtkRenderWindow.h>
+#include <QVTKOpenGLWindow.h>
+#include <QVTKOpenGLStereoWidget.h>
 
 int main(int argc, char *argv[])
 {

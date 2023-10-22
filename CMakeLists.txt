@@ -12,6 +12,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Sql)
+find_package(VTK 9.3 REQUIRED COMPONENTS)
+include_directories("/usr/local/include/Vtk-9.3")
 
 set(PROJECT_SOURCES
         main.cpp
@@ -35,6 +37,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         messagebox.cpp messagebox.h messagebox.ui
         material.cpp material.h material.ui
         project.cpp project.h project.ui
+        render.h render.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET pacnanogui APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -55,6 +58,7 @@ else()
 endif()
 
 target_link_libraries(pacnanogui PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt6::Sql)
+target_link_libraries(pacnanogui PRIVATE ${VTK_LIBRARIES})
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

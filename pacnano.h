@@ -23,6 +23,7 @@
 #include "open.h"
 #include "project.h"
 #include "remote.h"
+#include "render.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -40,6 +41,7 @@ private:
     Project *project;    // pacnano project
     Model *model;        //  model object
     Material *material;  // material dialog
+    Render *win;         // render window
 
 public:
     /*  constructor :

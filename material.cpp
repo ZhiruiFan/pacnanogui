@@ -52,6 +52,7 @@ Material::Material(QWidget* parent) : QDialog(parent), ui(new Ui::Material) {
     setupOthers();         // others
     setupManager();        // setup the manager
     setupRename();         // setup the rename dialog
+
     //  set an empty penal
     ui->matProperty->setCurrentIndex(0);
 
