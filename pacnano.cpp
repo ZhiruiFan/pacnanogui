@@ -38,7 +38,7 @@ pacnano::pacnano(QWidget *parent) : QMainWindow(parent), ui(new Ui::pacnano) {
     setupViewportSwitch();    // viewport setting
 
     /*  openGL widget to show the FEM model  */
-    win = new Render(ui->openGLWidget);
+    win = new Viewer(ui->openGLWidget);
 }
 
 /*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

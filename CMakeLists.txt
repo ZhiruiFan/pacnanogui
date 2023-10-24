@@ -37,7 +37,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         messagebox.cpp messagebox.h messagebox.ui
         material.cpp material.h material.ui
         project.cpp project.h project.ui
-        render.h render.cpp
+        viewer.h viewer.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET pacnanogui APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
