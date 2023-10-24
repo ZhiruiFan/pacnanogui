@@ -1,12 +1,12 @@
-#include "pacnano.h"
+#include <QVTKOpenGLStereoWidget.h>
+#include <QVTKOpenGLWindow.h>
+
 #include <QApplication>
 #include <QtOpenGLWidgets/QOpenGLWidget>
-#include <vtk-9.3/vtkRenderWindow.h>
-#include <QVTKOpenGLWindow.h>
-#include <QVTKOpenGLStereoWidget.h>
 
-int main(int argc, char *argv[])
-{
+#include "pacnano.h"
+
+int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
     pacnano w;
     w.show();

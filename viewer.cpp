@@ -71,22 +71,18 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     configScalarBar();
 
     /*  show the model */
-    std::string file = "/home/zhirui.fan/Downloads/TopOpt-301-1.vtu";
+    std::string file = "F:\\code\\TopOpt-301-1.vtu";
     //    showModel(file);
-    showMesh(file);
+    int index = 0;
+    int comp  = 0;
+    showMesh(index);
     std::string name = "U";
-    showField(name);
+    showField(index, comp);
 }
 
 /*  ----------------------------------------------------------------------------
  *  destructor: destroy the render object  */
 Viewer::~Viewer() {
-    //  the data object
-    ugrid->Delete();
-    ugrid = nullptr;
-    ugridMap->Delete();
-    ugridMap = nullptr;
-
     //  color and actor
     colors->Delete();
     colors = nullptr;
@@ -168,33 +164,35 @@ void Viewer::showMesh(int& index) {
 
 /*  ############################################################################
  *  extract the point and cell data  */
-void Viewer::showField(std::string& type) {
-    /*  extract the point data  */
-    vtkSmartPointer<vtkPointData> ptData = ugrid->GetPointData();
-    int numPtData                        = ptData->GetNumberOfArrays();
-    qDebug() << numPtData;
-    for (int i = 0; i < numPtData; ++i) {
-        vtkDataArray* array = ptData->GetArray(i);
-        qDebug() << "Name: " << array->GetName()
-                 << ", Components: " << array->GetNumberOfComponents();
+void Viewer::showField(int& index, int& comp) {
+    /*  get the current model  */
+    Model* model;
+    for (QList<Model*>::iterator it = modelList.begin(); it != modelList.end();
+         ++it) {
+        if ((*it)->index == index) {
+            model = *it;
+        }
     }
 
     //  extract the x-displacement
-    vtkDoubleArray* u  = vtkDoubleArray::SafeDownCast(ptData->GetArray(0));
-    vtkDoubleArray* ux = vtkDoubleArray::New();
-    ux->SetName("UX");
-    ux->SetNumberOfComponents(1);
-    for (vtkIdType i = 0; i < u->GetNumberOfTuples(); ++i) {
-        ux->InsertNextValue(u->GetTuple(i)[0]);
+    dtOld = vtkDoubleArray::SafeDownCast(model->pointData->GetArray(comp));
+    if (!dtCur) dtCur->Delete();
+    dtCur = vtkDoubleArray::New();
+    std::stringstream name;
+    name << dtOld->GetName() << "_" << compName[comp];
+    dtCur->SetName(name.str().c_str());
+    dtCur->SetNumberOfComponents(1);
+    for (vtkIdType i = 0; i < dtOld->GetNumberOfTuples(); ++i) {
+        dtCur->InsertNextValue(dtOld->GetTuple(i)[comp]);
     }
 
     /*  set the current display object  */
-    ptData->SetScalars(ux);
+    model->pointData->SetScalars(dtCur);
 
     //  create the color lookup table
     lut->SetHueRange(0.667, 0.0);
     lut->SetNumberOfTableValues(10);
-    lut->SetTableRange(ux->GetRange());
+    lut->SetTableRange(dtCur->GetRange());
     lut->Build();
 
     //  create the scalar bar
@@ -202,27 +200,16 @@ void Viewer::showField(std::string& type) {
     scalarBar->SetTitle("UX");
 
     //  setup the mapper
-    vtkDataSetMapper* mapper = vtkDataSetMapper::New();
-    mapper->SetInputData(ugrid);
-    mapper->SetScalarModeToUsePointData();
-    mapper->SetScalarRange(ux->GetRange());
-    mapper->SetLookupTable(lut);
-    mapper->SelectColorArray(ux->GetName());
-    actor->SetMapper(mapper);
+    dtMap->SetInputData(model->ugrid);
+    dtMap->SetScalarModeToUsePointData();
+    dtMap->SetScalarRange(dtCur->GetRange());
+    dtMap->SetLookupTable(lut);
+    dtMap->SelectColorArray(dtCur->GetName());
+    actor->SetMapper(dtMap);
     //    actor->GetProperty()->EdgeVisibilityOn();
     actor->GetProperty()->SetLineWidth(0.0);
     //    render->AddActor(actor);
     render->AddActor2D(scalarBar);
-
-    /*  extract the cell data  */
-    vtkCellData* cellData = ugrid->GetCellData();
-    int numCellData       = cellData->GetNumberOfArrays();
-    qDebug() << numCellData;
-    for (int i = 0; i < numCellData; ++i) {
-        vtkDataArray* array = cellData->GetArray(i);
-        qDebug() << "Name: " << array->GetName()
-                 << ", Components: " << array->GetNumberOfComponents();
-    }
 }
 
 /*  ----------------------------------------------------------------------------

@@ -49,6 +49,8 @@
 #include <QWidget>
 #include <chrono>
 #include <ctime>
+#include <iostream>
+#include <sstream>
 
 /*  class Viewer: */
 
@@ -75,6 +77,11 @@ private:
 
     /*  lookup table  */
     vtkLookupTable* lut;
+
+    /*  data information  */
+    vtkDoubleArray* dtOld;
+    vtkDoubleArray* dtCur;
+    QMap<int, char> compName = {{0, 'X'}, {1, 'Y'}, {2, 'Z'}};
 
 private:
     /*  nested class: Model
@@ -117,7 +124,7 @@ public:
 
     /*  showField: display the field information
      *  @ param  type: the type of the field variable  */
-    void showField(std::string& type);
+    void showField(int& index, int& comp);
 
     /*  extract the point and cell data  */
     void extractFieldData(vtkUnstructuredGrid*& grid);
