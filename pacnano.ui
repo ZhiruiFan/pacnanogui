@@ -1263,16 +1263,6 @@ QTreeView::branch:open:has-children:has-siblings  {
                  </widget>
                 </item>
                 <item>
-                 <widget class="QFrame" name="frame_5">
-                  <property name="frameShape">
-                   <enum>QFrame::HLine</enum>
-                  </property>
-                  <property name="frameShadow">
-                   <enum>QFrame::Raised</enum>
-                  </property>
-                 </widget>
-                </item>
-                <item>
                  <widget class="QToolButton" name="toolButton_11">
                   <property name="text">
                    <string>...</string>

@@ -1,27 +1,58 @@
+# ##############################################################################
+# CMAKE VERSION
 cmake_minimum_required(VERSION 3.5)
 
+# PROJECT VERSION
 project(pacnanogui VERSION 0.1 LANGUAGES CXX)
 
+# CMAKE CONFIGURATION
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+# CPLUS CONFIGURATION
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# ##############################################################################
+# DEFINE PACKAGES
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Sql)
+
+# ##############################################################################
+# VTK CONFIGURATION
+# Set the cmake folder fo VTK
+if(WIN32)
+    message("-- The program is complied in WINDOWS system ...")
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        message("-- Setting enronment variables for Debug mode ...")
+        set(ENV{VTK_DIR} "D:/VTK/Debug/lib/cmake/vtk-9.3")
+    elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+        message("-- Setting enronment variables for Release mode ...")
+        set(ENV{VTK_DIR} "D:/VTK/Release/lib/cmake/vtk-9.3")
+    endif()
+elseif (UNIX)
+    message("-- The program is complied in LINUX system ...")
+    set(ENV{VTK_DIR} "/opt/vtk/9.3.0/lib64/cmake/vtk-9.3")
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        message("-- Setting enronment variables for Debug mode ...")
+    elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+        message("-- Setting enronment variables for Release mode ...")
+    endif()
+endif()
 find_package(VTK 9.3 REQUIRED COMPONENTS)
 include_directories("/usr/local/include/Vtk-9.3")
 
+# ##############################################################################
+# DFINE THE MAIN FUNCTION
 set(PROJECT_SOURCES
         main.cpp
         pacnano.cpp
         pacnano.h
         pacnano.ui
 )
-
+# OTHER EXECUTABLE SOURCE FILES
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(pacnanogui
         MANUAL_FINALIZATION
@@ -38,11 +69,15 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         material.cpp material.h material.ui
         project.cpp project.h project.ui
         viewer.h viewer.cpp
+        optimization.h optimization.cpp optimization.ui
     )
+
+# ##############################################################################
 # Define target properties for Android with Qt 6 as:
-#    set_property(TARGET pacnanogui APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
+# set_property(TARGET pacnanogui APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
+#            ${CMAKE_CURRENT_SOURCE_DIR}/android)
+# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html
+# target-creation
 else()
     if(ANDROID)
         add_library(pacnanogui SHARED
@@ -69,7 +104,8 @@ endif()
 set_target_properties(pacnanogui PROPERTIES
     ${BUNDLE_ID_OPTION}
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+    MACOSX_BUNDLE_SHORT_VERSION_STRING
+    ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE TRUE
 )

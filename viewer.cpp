@@ -23,7 +23,7 @@
  *  @param  window: the object to the show the FEM model  */
 Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     /*  assign the FEM model viewer */
-    win = window;
+    win    = window;
 
     /*  setup the render for FEM model viewer */
     renWin = vtkGenericOpenGLRenderWindow::New();
@@ -33,7 +33,8 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     colors = vtkNamedColors::New();
     render->SetBackground(colors->GetColor3d("White").GetData());
 
-    /*  create the data points  */
+    /*  create the data mapper  */
+    dtMap = vtkDataSetMapper::New();
 
     /*  create the actor  */
     actor = vtkActor::New();
@@ -71,13 +72,14 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     configScalarBar();
 
     /*  show the model */
-    std::string file = "F:\\code\\TopOpt-301-1.vtu";
+    std::string file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
+    index            = 0;
+    modelList.append(new Field(index, file));
     //    showModel(file);
-    int index = 0;
-    int comp  = 0;
     showMesh(index);
-    std::string name = "U";
-    showField(index, comp);
+    //    std::string name = "U";
+    //    int comp         = 0;
+    //    showField(index, comp);
 }
 
 /*  ----------------------------------------------------------------------------
@@ -99,7 +101,7 @@ Viewer::~Viewer() {
     renWin = nullptr;
 
     //  the window the show the FEM model
-    win = nullptr;
+    win    = nullptr;
 }
 
 /*  ############################################################################
@@ -107,19 +109,18 @@ Viewer::~Viewer() {
  *  @param  index: the index of the model that will be shown  */
 void Viewer::showModel(int& index) {
     /*  get the model object according to the index  */
-    Model* model;
-    for (QList<Model*>::iterator it = modelList.begin(); it != modelList.end();
-         ++it) {
+    QList<Field*>::iterator it;
+    for (it = modelList.begin(); it != modelList.end(); ++it) {
         if ((*it)->index == index) {
-            model = *it;
+            break;
         }
     }
     /*  set the head information  */
     std::string info = "Geometry of the current model";
-    configStatusBar(model->file, info);
+    configStatusBar((*it)->file, info);
 
     /*  set the data to the viewer  */
-    dtMap->SetInputConnection(model->port);
+    dtMap->SetInputConnection((*it)->port);
     dtMap->ScalarVisibilityOff();
 
     /*  configure the actor  */
@@ -137,25 +138,24 @@ void Viewer::showModel(int& index) {
  *  @param  file: the file to read the model mesh information  */
 void Viewer::showMesh(int& index) {
     /*  get the model object according to the index  */
-    Model* model;
-    for (QList<Model*>::iterator it = modelList.begin(); it != modelList.end();
-         ++it) {
+    QList<Field*>::iterator it;
+    for (it = modelList.begin(); it != modelList.end(); ++it) {
         if ((*it)->index == index) {
-            model = *it;
+            break;
         }
     }
     /*  set the head information  */
     std::string info = "Geometry of the current model";
-    configStatusBar(model->file, info);
+    configStatusBar((*it)->file, info);
 
     /*  set the data to the viewer  */
-    dtMap->SetInputConnection(model->port);
+    dtMap->SetInputConnection((*it)->port);
     dtMap->ScalarVisibilityOff();
 
     /*  configure the actor  */
     actor->GetProperty()->SetColor(colors->GetColor3d("cyan").GetData());
-    actor->GetProperty()->SetEdgeVisibility(0);
-    actor->GetProperty()->SetLineWidth(2.0);
+    actor->GetProperty()->SetEdgeVisibility(1);
+    actor->GetProperty()->SetLineWidth(0.0);
     actor->SetMapper(dtMap);
 
     /*  configure the camera  */
@@ -166,16 +166,15 @@ void Viewer::showMesh(int& index) {
  *  extract the point and cell data  */
 void Viewer::showField(int& index, int& comp) {
     /*  get the current model  */
-    Model* model;
-    for (QList<Model*>::iterator it = modelList.begin(); it != modelList.end();
-         ++it) {
+    QList<Field*>::iterator it;
+    for (it = modelList.begin(); it != modelList.end(); ++it) {
         if ((*it)->index == index) {
-            model = *it;
+            break;
         }
     }
 
     //  extract the x-displacement
-    dtOld = vtkDoubleArray::SafeDownCast(model->pointData->GetArray(comp));
+    dtOld = vtkDoubleArray::SafeDownCast((*it)->pointData->GetArray(comp));
     if (!dtCur) dtCur->Delete();
     dtCur = vtkDoubleArray::New();
     std::stringstream name;
@@ -187,7 +186,7 @@ void Viewer::showField(int& index, int& comp) {
     }
 
     /*  set the current display object  */
-    model->pointData->SetScalars(dtCur);
+    (*it)->pointData->SetScalars(dtCur);
 
     //  create the color lookup table
     lut->SetHueRange(0.667, 0.0);
@@ -200,7 +199,7 @@ void Viewer::showField(int& index, int& comp) {
     scalarBar->SetTitle("UX");
 
     //  setup the mapper
-    dtMap->SetInputData(model->ugrid);
+    dtMap->SetInputData((*it)->ugrid);
     dtMap->SetScalarModeToUsePointData();
     dtMap->SetScalarRange(dtCur->GetRange());
     dtMap->SetLookupTable(lut);
@@ -220,6 +219,8 @@ void Viewer::configCamera() {
     render->GetActiveCamera()->Elevation(60.0);
     render->GetActiveCamera()->Azimuth(30.0);
     render->GetActiveCamera()->Dolly(1.2);
+    render->GetActiveCamera()->SetClippingRange(
+        0.1, std::numeric_limits<double>::max());
 }
 
 /*  ----------------------------------------------------------------------------
@@ -285,17 +286,20 @@ void Viewer::configScalarBar() {
  *  Description: the class to read and configure the field variables of each
  *  data files, which includes the point data and cell data
  *  constructor: create a field objective
- *  @param  file: the path to read the vtu file  */
-Viewer::Model::Model(std::string path) {
+ *  @param  index: the index of the current model
+ *  @param  file: the path to read the vtu file */
+Viewer::Field::Field(const int& idx, std::string path) {
     /*  read the file data  */
     reader = vtkXMLUnstructuredGridReader::New();
     ugrid  = vtkUnstructuredGrid::New();
+    file   = path;
+    index  = idx;
 
     /*  read the unstructured data information from local */
     reader->SetFileName(file.c_str());
     reader->Update();
-    ugrid = reader->GetOutput();
-    port  = reader->GetOutputPort();
+    ugrid         = reader->GetOutput();
+    port          = reader->GetOutputPort();
 
     /*  get the number of fields  */
     pointData     = ugrid->GetPointData();

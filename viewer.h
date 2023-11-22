@@ -87,7 +87,7 @@ private:
     /*  nested class: Model
      *  Description: the class to read and configure the field variables of each
      *  data files, which includes the point data and cell data  */
-    class Model {
+    class Field {
     public:
         int index;                             // the index of the field
         int numPointField;                     // number of point data
@@ -101,10 +101,12 @@ private:
 
     public:
         /*  constructor: create a field objective
-         *  @param  file: the path to read the vtu file  */
-        Model(std::string path);
+         *  @parma  idx: the index of the current field variables
+         *  @param  file: the path to read the vtu fil e*/
+        Field(const int& idx, std::string path);
     };
-    QList<Model*> modelList;
+    int index;
+    QList<Field*> modelList;
 
 public:
     /*  constructor: create the render window to show the FEM model
