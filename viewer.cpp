@@ -23,7 +23,7 @@
  *  @param  window: the object to the show the FEM model  */
 Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     /*  assign the FEM model viewer */
-    win    = window;
+    win = window;
 
     /*  setup the render for FEM model viewer */
     renWin = vtkGenericOpenGLRenderWindow::New();
@@ -67,19 +67,26 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     render->AddActor(status);
 
     /*  lookup table  */
-    lut       = vtkLookupTable::New();
-    scalarBar = vtkScalarBarActor::New();
+    lut = vtkLookupTable::New();
+
+    /*  Scalar bar  */
+    scalarBar         = vtkScalarBarActor::New();
+    isScalarBarPlayed = false;
     configScalarBar();
 
+    /*  Picker  */
+    cellPicker = vtkCellPicker::New();
+    cellPicker->SetTolerance(0.01);
+
     /*  show the model */
-    std::string file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
-    index            = 0;
-    modelList.append(new Field(index, file));
+    QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
+    Field* field = new Field(file);
     //    showModel(file);
-    showMesh(index);
+    //    showMesh(field);
     //    std::string name = "U";
     //    int comp         = 0;
-    //    showField(index, comp);
+    //    showPointField(field, 0, 0);
+    pickupCells(field);
 }
 
 /*  ----------------------------------------------------------------------------
@@ -101,26 +108,19 @@ Viewer::~Viewer() {
     renWin = nullptr;
 
     //  the window the show the FEM model
-    win    = nullptr;
+    win = nullptr;
 }
 
 /*  ############################################################################
  *  showModel: display the model geometry in the viewer object
  *  @param  index: the index of the model that will be shown  */
-void Viewer::showModel(int& index) {
-    /*  get the model object according to the index  */
-    QList<Field*>::iterator it;
-    for (it = modelList.begin(); it != modelList.end(); ++it) {
-        if ((*it)->index == index) {
-            break;
-        }
-    }
+void Viewer::showModel(Field*& field) {
     /*  set the head information  */
-    std::string info = "Geometry of the current model";
-    configStatusBar((*it)->file, info);
+    QString info = "Geometry of the current model";
+    configStatusBar(field->name, info);
 
     /*  set the data to the viewer  */
-    dtMap->SetInputConnection((*it)->port);
+    dtMap->SetInputConnection(field->port);
     dtMap->ScalarVisibilityOff();
 
     /*  configure the actor  */
@@ -136,20 +136,13 @@ void Viewer::showModel(int& index) {
 /*  ----------------------------------------------------------------------------
  *  showMesh: display the FEM model in the viewer object
  *  @param  file: the file to read the model mesh information  */
-void Viewer::showMesh(int& index) {
-    /*  get the model object according to the index  */
-    QList<Field*>::iterator it;
-    for (it = modelList.begin(); it != modelList.end(); ++it) {
-        if ((*it)->index == index) {
-            break;
-        }
-    }
+void Viewer::showMesh(Field*& field) {
     /*  set the head information  */
-    std::string info = "Geometry of the current model";
-    configStatusBar((*it)->file, info);
+    QString info = "Geometry of the current model";
+    configStatusBar(field->name, info);
 
     /*  set the data to the viewer  */
-    dtMap->SetInputConnection((*it)->port);
+    dtMap->SetInputConnection(field->port);
     dtMap->ScalarVisibilityOff();
 
     /*  configure the actor  */
@@ -163,56 +156,87 @@ void Viewer::showMesh(int& index) {
 }
 
 /*  ############################################################################
- *  extract the point and cell data  */
-void Viewer::showField(int& index, int& comp) {
-    /*  get the current model  */
-    QList<Field*>::iterator it;
-    for (it = modelList.begin(); it != modelList.end(); ++it) {
-        if ((*it)->index == index) {
-            break;
-        }
-    }
+ *  showPointField: display the information with respect to the nodes,
+ *  it includes the nodal displacement, reaction force and so on
+ *  @param  field: the field that to be shown
+ *  @param  idx: the index of the component in the data set
+ *  @param  comp: the component index  */
+void Viewer::showPointField(Field*& field, const int& index, const int& comp) {
+    /*  Get the the field  */
+    vtkDataArray* dtOld = field->pointData->GetArray(index);
 
-    //  extract the x-displacement
-    dtOld = vtkDoubleArray::SafeDownCast((*it)->pointData->GetArray(comp));
-    if (!dtCur) dtCur->Delete();
-    dtCur = vtkDoubleArray::New();
-    std::stringstream name;
-    name << dtOld->GetName() << "_" << compName[comp];
-    dtCur->SetName(name.str().c_str());
+    /*  Create the temporary variable to show field  */
+    vtkDoubleArray* dtCur = vtkDoubleArray::New();
     dtCur->SetNumberOfComponents(1);
-    for (vtkIdType i = 0; i < dtOld->GetNumberOfTuples(); ++i) {
-        dtCur->InsertNextValue(dtOld->GetTuple(i)[comp]);
+
+    /*  Extract the components in the field  */
+    std::stringstream name;
+    if (comp < 3) {
+        //  extract the sub components
+        for (vtkIdType i = 0; i < dtOld->GetNumberOfTuples(); ++i) {
+            dtCur->InsertNextValue(dtOld->GetTuple(i)[comp]);
+        }
+        //  determine the name of the components
+        name << dtOld->GetName() << ":" << compName[comp];
+    } else {
+        // extract the amplitude of the field
+        double x, y, z;
+        for (vtkIdType i = 0; i < dtOld->GetNumberOfTuples(); ++i) {
+            x = dtOld->GetTuple(i)[0];
+            y = dtOld->GetTuple(i)[1];
+            z = dtOld->GetTuple(i)[2];
+            dtCur->InsertNextValue(sqrt(x * x + y * y + z * z));
+        }
+        //  determine the name of the components
+        name << dtOld->GetName() << ": total";
     }
+    //  assign the name of the components
+    dtCur->SetName(name.str().c_str());
+    //  set the current displayed data
+    field->pointData->SetScalars(dtCur);
 
-    /*  set the current display object  */
-    (*it)->pointData->SetScalars(dtCur);
-
-    //  create the color lookup table
+    /*  Create the LOOKUP table  */
     lut->SetHueRange(0.667, 0.0);
-    lut->SetNumberOfTableValues(10);
+    lut->SetNumberOfTableValues(12);
     lut->SetTableRange(dtCur->GetRange());
     lut->Build();
 
-    //  create the scalar bar
-    scalarBar->SetLookupTable(lut);
-    scalarBar->SetTitle("UX");
+    /*  Create the scalar bar  */
+    if (!isScalarBarPlayed) {
+        scalarBar->SetLookupTable(lut);
+        scalarBar->SetTitle(name.str().c_str());
+        render->AddActor(scalarBar);
+        isScalarBarPlayed = true;
+    }
 
-    //  setup the mapper
-    dtMap->SetInputData((*it)->ugrid);
+    /*  Update the warpper  */
+    field->updateWarper();
+
+    /*  Config the status bar  */
+    QString info = "Plot the calculated field of the finite element model.";
+    configStatusBar(field->name, info);
+
+    /*  setup the mapper  */
+    dtMap->SetInputConnection(field->warp->GetOutputPort());
+    dtMap->SetScalarVisibility(1);
     dtMap->SetScalarModeToUsePointData();
     dtMap->SetScalarRange(dtCur->GetRange());
     dtMap->SetLookupTable(lut);
     dtMap->SelectColorArray(dtCur->GetName());
+
+    /*  Setup the actor  */
     actor->SetMapper(dtMap);
-    //    actor->GetProperty()->EdgeVisibilityOn();
+    actor->GetProperty()->SetEdgeVisibility(field->ifMeshed);
     actor->GetProperty()->SetLineWidth(0.0);
-    //    render->AddActor(actor);
     render->AddActor2D(scalarBar);
+
+    /*  Configure the camera  */
+    configCamera();
+    renWin->Render();
 }
 
-/*  ----------------------------------------------------------------------------
- *  configCamera: configure the camera and show the FEM model appropriately  */
+/*  ============================================================================
+ *  configCamera: configure the camera to show the FEM model appropriately  */
 void Viewer::configCamera() {
     /*  set the camera configuration  */
     render->ResetCamera();
@@ -223,12 +247,12 @@ void Viewer::configCamera() {
         0.1, std::numeric_limits<double>::max());
 }
 
-/*  ----------------------------------------------------------------------------
+/*  ============================================================================
  *  configure the status bar, which includes the system time, model
  *  information
  *  @param  file: the model that will be displayed
  *  @param  info: the model information that will be shown  */
-void Viewer::configStatusBar(std::string& file, std::string& info) {
+void Viewer::configStatusBar(QString& file, QString& info) {
     /*  Get the system time  */
     auto curTime            = std::chrono::system_clock::now();
     std::time_t curTime_t   = std::chrono::system_clock::to_time_t(curTime);
@@ -239,19 +263,19 @@ void Viewer::configStatusBar(std::string& file, std::string& info) {
          << locTime->tm_min << ":" << locTime->tm_sec;
 
     /*  configure the status information  */
-    std::string data = "File: " + file +           //
-                       "\nDescription: " + info +  //
-                       "\n\nDate: " + time.str();
-    status->SetInput(data.c_str());
+    QString data = "File: " + file +  //
+                   "\nDescription: " + info + "\n\nDate: ";
+    data.append(time.str());
+    status->SetInput(data.toStdString().c_str());
 }
 
-/*  ----------------------------------------------------------------------------
+/*  ============================================================================
  *  configScalarBar: configure the scalar bar style  */
 void Viewer::configScalarBar() {
-    //  turn off the auto font setting
+    /*  turn off the auto font setting */
     scalarBar->UnconstrainedFontSizeOn();
 
-    //  set the title
+    /*  set the title style  */
     scalarBar->GetTitleTextProperty()->SetColor(0.0, 0.0, 0.0);
     scalarBar->GetTitleTextProperty()->SetFontSize(20);
     scalarBar->GetTitleTextProperty()->SetJustificationToLeft();
@@ -260,7 +284,7 @@ void Viewer::configScalarBar() {
     scalarBar->GetTitleTextProperty()->SetBold(0);
     scalarBar->GetTitleTextProperty()->SetItalic(0);
 
-    //  set the font type and size
+    /*  set the label style  */
     scalarBar->GetLabelTextProperty()->SetColor(0.0, 0.0, 0.0);
     scalarBar->GetLabelTextProperty()->SetFontFamilyToCourier();
     scalarBar->GetLabelTextProperty()->SetFontSize(15);
@@ -268,42 +292,126 @@ void Viewer::configScalarBar() {
     scalarBar->GetLabelTextProperty()->SetItalic(0);
     scalarBar->GetLabelTextProperty()->SetJustificationToLeft();
     scalarBar->GetLabelTextProperty()->SetVerticalJustificationToBottom();
+    scalarBar->SetNumberOfLabels(12);
 
-    //  set the number of labels in scalar bar
-    scalarBar->SetNumberOfLabels(10);
-
-    //  set the position of the scalar bar
-    scalarBar->SetPosition(0.04, 0.60);
+    /*  set the position  */
+    scalarBar->SetPosition(0.02, 0.60);
     scalarBar->SetMaximumWidthInPixels(70);
     scalarBar->SetMaximumHeightInPixels(200);
 
-    //  label data format
+    /*  label data format  */
     scalarBar->SetLabelFormat("%.4e");
 }
 
 /*  ############################################################################
- *  nested class: Model
- *  Description: the class to read and configure the field variables of each
- *  data files, which includes the point data and cell data
- *  constructor: create a field objective
- *  @param  index: the index of the current model
- *  @param  file: the path to read the vtu file */
-Viewer::Field::Field(const int& idx, std::string path) {
-    /*  read the file data  */
-    reader = vtkXMLUnstructuredGridReader::New();
-    ugrid  = vtkUnstructuredGrid::New();
-    file   = path;
-    index  = idx;
+ *  pickCells: pick up the cells in the viewerport using the mouse box
+ *  selection method.  */
+void Viewer::pickupCells(Field* field) {
+    /*  Create the Poly data from the field  */
+    vtkGeometryFilter* geom = vtkGeometryFilter::New();
+    geom->SetInputData(field->ugrid);
+    geom->Update();
+    vtkPolyData* polyData = geom->GetOutput();
 
-    /*  read the unstructured data information from local */
-    reader->SetFileName(file.c_str());
-    reader->Update();
-    ugrid         = reader->GetOutput();
-    port          = reader->GetOutputPort();
+    vtkNew<vtkNamedColors> colors;
 
-    /*  get the number of fields  */
-    pointData     = ugrid->GetPointData();
-    numPointField = pointData->GetNumberOfArrays();
-    cellData      = ugrid->GetCellData();
-    numCellField  = cellData->GetNumberOfArrays();
+    vtkNew<vtkIdFilter> idFilter;
+    idFilter->SetInputData(polyData);
+    idFilter->SetCellIdsArrayName("OriginalIds");
+    idFilter->SetPointIdsArrayName("OriginalIds");
+    idFilter->Update();
+
+    // This is needed to convert the ouput of vtkIdFilter (vtkDataSet) back to
+    // vtkPolyData.
+    vtkNew<vtkDataSetSurfaceFilter> surfaceFilter;
+    surfaceFilter->SetInputConnection(idFilter->GetOutputPort());
+    surfaceFilter->Update();
+
+    vtkPolyData* input = surfaceFilter->GetOutput();
+
+    // Create a mapper and actor.
+    vtkNew<vtkPolyDataMapper> mapper;
+    mapper->SetInputData(polyData);
+    mapper->ScalarVisibilityOff();
+
+    vtkNew<vtkActor> actor;
+    actor->SetMapper(mapper);
+    actor->GetProperty()->SetPointSize(5);
+    actor->GetProperty()->SetDiffuseColor(
+        colors->GetColor3d("Peacock").GetData());
+    // Visualize
+    vtkNew<vtkRenderer> renderer;
+    renderer->UseHiddenLineRemovalOn();
+
+    //    QVTKOpenGLNativeWidget* window;
+    //    window = new QVTKOpenGLNativeWidget;
+    vtkNew<vtkRenderWindow> renderWindow;
+    win->setRenderWindow(renderWindow);
+    renderWindow->AddRenderer(renderer);
+    renderWindow->SetSize(640, 480);
+    renderWindow->SetWindowName("HighlightSelection");
+
+    vtkNew<vtkAreaPicker> areaPicker;
+    vtkNew<vtkRenderWindowInteractor> renderWindowInteractor;
+    renderWindowInteractor->SetPicker(areaPicker);
+    renderWindowInteractor->SetRenderWindow(renderWindow);
+
+    renderer->AddActor(actor);
+    renderer->SetBackground(colors->GetColor3d("Tan").GetData());
+
+    renderWindow->Render();
+
+    vtkNew<Pick> style;
+    style->setPolyData(input);
+    renderWindowInteractor->SetInteractorStyle(style);
+
+    renderWindowInteractor->Start();
+}
+
+/*  ============================================================================
+ *  New: define the New function using the built-in interface of VTK  */
+vtkStandardNewMacro(Viewer::Pick);
+
+/*  ============================================================================
+ *  OnLectButtonUp: the overrided member function to define the event when the \
+ *  left mouse button is up  */
+void Viewer::Pick::OnLeftButtonUp() {
+    /*  perform the forward member function  */
+    vtkInteractorStyleRubberBandPick::OnLeftButtonUp();
+
+    /*  if the selection mode is actived  */
+    if (CurrentMode == 1) {
+        vtkNew<vtkNamedColors> colors;
+
+        vtkPlanes* frustum =
+            static_cast<vtkAreaPicker*>(this->GetInteractor()->GetPicker())
+                ->GetFrustum();
+
+        vtkNew<vtkExtractPolyDataGeometry> extractPolyDataGeometry;
+        extractPolyDataGeometry->SetInputData(polyData);
+        extractPolyDataGeometry->SetImplicitFunction(frustum);
+        extractPolyDataGeometry->Update();
+
+        std::cout << "Extracted "
+                  << extractPolyDataGeometry->GetOutput()->GetNumberOfCells()
+                  << " cells." << std::endl;
+        this->selectMap->SetInputData(extractPolyDataGeometry->GetOutput());
+        this->selectMap->ScalarVisibilityOff();
+
+        // vtkIdTypeArray* ids =
+        // dynamic_cast<vtkIdTypeArray*>(selected->GetPointData()->GetArray("OriginalIds"));
+
+        this->selectActor->GetProperty()->SetColor(
+            colors->GetColor3d("Tomato").GetData());
+        this->selectActor->GetProperty()->SetPointSize(5);
+        this->selectActor->GetProperty()->SetRepresentationToWireframe();
+
+        this->GetInteractor()
+            ->GetRenderWindow()
+            ->GetRenderers()
+            ->GetFirstRenderer()
+            ->AddActor(selectActor);
+        this->GetInteractor()->GetRenderWindow()->Render();
+        this->HighlightProp(NULL);
+    }
 }

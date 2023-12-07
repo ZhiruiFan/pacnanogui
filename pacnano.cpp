@@ -20,7 +20,7 @@
 #include "./ui_pacnano.h"
 #include "qpushbutton.h"
 
-pacnano::pacnano(QWidget *parent) : QMainWindow(parent), ui(new Ui::pacnano) {
+pacnano::pacnano(QWidget* parent) : QMainWindow(parent), ui(new Ui::pacnano) {
     /*  CREATE UI  */
     ui->setupUi(this);
 
@@ -39,6 +39,18 @@ pacnano::pacnano(QWidget *parent) : QMainWindow(parent), ui(new Ui::pacnano) {
 
     /*  openGL widget to show the FEM model  */
     win = new Viewer(ui->openGLWidget);
+
+    connect(ui->actSelect, &QAction::triggered, win, [&]() {
+        /*  show the model */
+        QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
+        Field* field = new Field(file);
+        //    showModel(file);
+        //    showMesh(field);
+        //    std::string name = "U";
+        //    int comp         = 0;
+        //    showPointField(field, 0, 0);
+        win->pickupCells(field);
+    });
 }
 
 /*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

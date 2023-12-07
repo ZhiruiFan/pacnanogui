@@ -2627,10 +2627,11 @@ QTreeView::branch:open:has-children:has-siblings  {
     <addaction name="actYZ"/>
     <addaction name="actXZ"/>
    </widget>
-   <widget class="QMenu" name="menuTools_2">
+   <widget class="QMenu" name="menuTools">
     <property name="title">
      <string>Tools</string>
     </property>
+    <addaction name="actSelect"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -2677,7 +2678,7 @@ QTreeView::branch:open:has-children:has-siblings  {
    <addaction name="menuOptimization"/>
    <addaction name="menuPost"/>
    <addaction name="menuView"/>
-   <addaction name="menuTools_2"/>
+   <addaction name="menuTools"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -3715,6 +3716,11 @@ QTreeView::branch:open:has-children:has-siblings  {
    </property>
    <property name="text">
     <string>Model Manager</string>
+   </property>
+  </action>
+  <action name="actSelect">
+   <property name="text">
+    <string>Select</string>
    </property>
   </action>
  </widget>

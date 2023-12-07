@@ -70,6 +70,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         project.cpp project.h project.ui
         viewer.h viewer.cpp
         optimization.h optimization.cpp optimization.ui
+        field.h field.cpp
     )
 
 # ##############################################################################

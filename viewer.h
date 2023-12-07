@@ -18,31 +18,38 @@
 
 #include <QVTKOpenGLNativeWidget.h>
 #include <vtkActor.h>
+#include <vtkAreaPicker.h>
 #include <vtkAxesActor.h>
 #include <vtkCamera.h>
-#include <vtkCellData.h>
+#include <vtkCellPicker.h>
 #include <vtkCellType.h>
-#include <vtkColorTransferFunction.h>
+#include <vtkCommand.h>
 #include <vtkDataArray.h>
 #include <vtkDataSetMapper.h>
+#include <vtkDataSetSurfaceFilter.h>
 #include <vtkDoubleArray.h>
+#include <vtkExtractPolyDataGeometry.h>
 #include <vtkGenericOpenGLRenderWindow.h>
+#include <vtkGeometryFilter.h>
+#include <vtkIdFilter.h>
+#include <vtkInteractorStyleRubberBandPick.h>
 #include <vtkLookupTable.h>
 #include <vtkNamedColors.h>
 #include <vtkNew.h>
 #include <vtkOrientationMarkerWidget.h>
-#include <vtkPointData.h>
+#include <vtkPlanes.h>
 #include <vtkPolyDataMapper.h>
+#include <vtkProp3DCollection.h>
 #include <vtkProperty.h>
 #include <vtkProperty2D.h>
 #include <vtkRenderWindow.h>
+#include <vtkRenderWindowInteractor.h>
 #include <vtkRenderer.h>
+#include <vtkRendererCollection.h>
 #include <vtkScalarBarActor.h>
+#include <vtkSmartPointer.h>
 #include <vtkTextActor.h>
 #include <vtkTextProperty.h>
-#include <vtkUnstructuredGrid.h>
-#include <vtkWarpVector.h>
-#include <vtkXMLUnstructuredGridReader.h>
 
 #include <QList>
 #include <QObject>
@@ -52,61 +59,70 @@
 #include <iostream>
 #include <sstream>
 
-/*  class Viewer: */
+#include "field.h"
 
+/*  ############################################################################
+ *  class Viewer: the class to define the visualization interface, which
+ *      includes displaying the geometry, mesh, and field variables, and also
+ *      selecting the nodes and elements.  */
 class Viewer : public QWidget {
     Q_OBJECT
 
 private:
     /*  Viewport variables  */
-    QVTKOpenGLNativeWidget* win;
-    vtkGenericOpenGLRenderWindow* renWin;
-    vtkRenderer* render;
-    vtkNamedColors* colors;
-
-    /*  data mapper  */
-    vtkDataSetMapper* dtMap;
-
-    /*  actors to show the field  */
-    vtkActor* actor;
-    vtkOrientationMarkerWidget* axis;
-    vtkAxesActor* actaxis;
-    std::stringstream time;
-    vtkTextActor* status;
-    vtkScalarBarActor* scalarBar;
-
-    /*  lookup table  */
-    vtkLookupTable* lut;
+    QVTKOpenGLNativeWidget* win;           // main window
+    vtkGenericOpenGLRenderWindow* renWin;  // render window
+    vtkRenderer* render;                   // render object
+    vtkNamedColors* colors;                // color object
+    vtkDataSetMapper* dtMap;               // data set mapper
+    vtkActor* actor;                       //  actor of the viewerport
+    vtkOrientationMarkerWidget* axis;      // axis object
+    vtkAxesActor* actaxis;                 // axis actor
+    std::stringstream time;                // current time
+    vtkTextActor* status;                  // status bar
+    vtkScalarBarActor* scalarBar;          // scalar bar
+    bool isScalarBarPlayed;                // the scalarbar is acted or not
+    vtkLookupTable* lut;                   // lookup table
+    vtkRenderWindowInteractor* interact;   // interactor
+    vtkCellPicker* cellPicker;             // cell picker
 
     /*  data information  */
-    vtkDoubleArray* dtOld;
-    vtkDoubleArray* dtCur;
     QMap<int, char> compName = {{0, 'X'}, {1, 'Y'}, {2, 'Z'}};
 
 private:
-    /*  nested class: Model
-     *  Description: the class to read and configure the field variables of each
-     *  data files, which includes the point data and cell data  */
-    class Field {
-    public:
-        int index;                             // the index of the field
-        int numPointField;                     // number of point data
-        int numCellField;                      // number of cell data
-        std::string file;                      // the file path
-        vtkUnstructuredGrid* ugrid;            // the unstructured grid object
-        vtkPointData* pointData;               // the point data object
-        vtkCellData* cellData;                 // the cell data object
-        vtkAlgorithmOutput* port;              // the data algorithm port
-        vtkXMLUnstructuredGridReader* reader;  // reader of the data
+    class Pick : public vtkInteractorStyleRubberBandPick {
+    private:
+        vtkPolyData* polyData;                     // ploy geometry of mesh
+        vtkActor* selectActor;                     // actor for selection
+        vtkDataSetMapper* selectMap;               // mappler of data selection
+        vtkExtractPolyDataGeometry* polyGeometry;  // geometry
+        vtkPlanes* frustum;                        // viewerport frustum
+        vtkRenderer* render;                       // renderer
+        vtkGenericOpenGLRenderWindow* renWin;      // render window
 
     public:
-        /*  constructor: create a field objective
-         *  @parma  idx: the index of the current field variables
-         *  @param  file: the path to read the vtu fil e*/
-        Field(const int& idx, std::string path);
+        /*  New: create the object using the VTK style  */
+        static Pick* New();
+        vtkTypeMacro(Pick, vtkInteractorStyleRubberBandPick);
+        /*  Constructor: create the Pick object  */
+        Pick() : vtkInteractorStyleRubberBandPick() {
+            selectMap   = vtkDataSetMapper::New();
+            selectActor = vtkActor::New();
+            selectActor->SetMapper(selectMap);
+        };
+        /*  Assign the basic variables  */
+        void setMapper(vtkDataSetMapper* dtMap) { selectMap = dtMap; }
+        void setActor(vtkActor*& actor) { selectActor = actor; }
+        /*  OnLeftButtonUp: override the event for the left button up  */
+        virtual void OnLeftButtonUp() override;
+        /*  setPolyData: assign the poly data to the current object  */
+        void setPolyData(vtkPolyData* pd) { polyData = pd; };
+        void setRender(vtkRenderer*& ren) {
+            render = ren;
+            render->AddActor(selectActor);
+        }
+        void setRenWindow(vtkGenericOpenGLRenderWindow* win) { renWin = win; }
     };
-    int index;
-    QList<Field*> modelList;
 
 public:
     /*  constructor: create the render window to show the FEM model
@@ -117,32 +133,44 @@ public:
     ~Viewer();
 
     /*  showModel: display the geometry of the model
-     *  @param  index: the index of the model that will be shown */
-    void showModel(int& index);
+     *  @param  field: the field variable to be shown  */
+    void showModel(Field*& field);
 
     /*  showMesh: display the mesh of the FEM model
-     *  @param  index: the index of the model that will be shown */
-    void showMesh(int& index);
+     *  @param  field: the field variable to be shown  */
+    void showMesh(Field*& field);
 
-    /*  showField: display the field information
-     *  @ param  type: the type of the field variable  */
-    void showField(int& index, int& comp);
+    /*  showPointField: display the information with respect to the nodes,
+     *  it includes the nodal displacement, reaction force and so on
+     *  @param  field: the field that to be shown
+     *  @param  idx: the index of the component in the data set
+     *  @param  comp: the component index  */
+    void showPointField(Field*& field, const int& idx, const int& comp);
+
+    /*  showCellField: display the information with respect to the elements,
+     *  it includes the stress components, design variables in topology
+     *  optimization and so on
+     *  @param  field: the field that to be shown
+     *  @param  idx: the index of the component in the data set  */
+    void showCellField(Field*& field, const int& idx);
 
     /*  extract the point and cell data  */
     void extractFieldData(vtkUnstructuredGrid*& grid);
 
+    /*  pickCells: pick up the cells in the viewerport using the mouse box
+     *  selection method.  */
+    void pickupCells(Field* field);
+
 private:
     /*  configure the small widget in the render window  */
-    void configCamera();  // configure the camera
-
-    /*  configScalarBar: configure the scalar bar style  */
-    void configScalarBar();
+    void configCamera();     // configure the camera
+    void configScalarBar();  // scalar bar
 
     /*  configure the status bar, which includes the system time, model
      *  information
      *  @param  file: the model that will be displayed
      *  @param  info: the model information that will be shown  */
-    void configStatusBar(std::string& file, std::string& info);
+    void configStatusBar(QString& file, QString& info);
 };
 
 #endif  // VIEWER_H
