@@ -81,7 +81,7 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     /*  show the model */
     QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
     Field* field = new Field(file);
-    //    showModel(file);
+    //    showModel(field);
     //    showMesh(field);
     //    std::string name = "U";
     //    int comp         = 0;
@@ -313,59 +313,43 @@ void Viewer::pickupCells(Field* field) {
     geom->Update();
     vtkPolyData* polyData = geom->GetOutput();
 
-    vtkNew<vtkNamedColors> colors;
-
+    /*  Define the filter */
     vtkNew<vtkIdFilter> idFilter;
     idFilter->SetInputData(polyData);
     idFilter->SetCellIdsArrayName("OriginalIds");
     idFilter->SetPointIdsArrayName("OriginalIds");
     idFilter->Update();
 
-    // This is needed to convert the ouput of vtkIdFilter (vtkDataSet) back to
-    // vtkPolyData.
+    /*  Convert the ouput of vtkIdFilter (vtkDataSet) back to vtkPolyData  */
     vtkNew<vtkDataSetSurfaceFilter> surfaceFilter;
     surfaceFilter->SetInputConnection(idFilter->GetOutputPort());
     surfaceFilter->Update();
-
     vtkPolyData* input = surfaceFilter->GetOutput();
 
-    // Create a mapper and actor.
-    vtkNew<vtkPolyDataMapper> mapper;
-    mapper->SetInputData(polyData);
-    mapper->ScalarVisibilityOff();
+    /*  set the head information  */
+    QString info = "Geometry of the current model";
+    configStatusBar(field->name, info);
 
-    vtkNew<vtkActor> actor;
-    actor->SetMapper(mapper);
-    actor->GetProperty()->SetPointSize(5);
-    actor->GetProperty()->SetDiffuseColor(
-        colors->GetColor3d("Peacock").GetData());
-    // Visualize
-    vtkNew<vtkRenderer> renderer;
-    renderer->UseHiddenLineRemovalOn();
+    /*  set the data to the viewer  */
+    dtMap->SetInputData(polyData);
+    dtMap->ScalarVisibilityOff();
 
-    //    QVTKOpenGLNativeWidget* window;
-    //    window = new QVTKOpenGLNativeWidget;
-    vtkNew<vtkRenderWindow> renderWindow;
-    win->setRenderWindow(renderWindow);
-    renderWindow->AddRenderer(renderer);
-    renderWindow->SetSize(640, 480);
-    renderWindow->SetWindowName("HighlightSelection");
+    /*  configure the actor  */
+    actor->GetProperty()->SetColor(colors->GetColor3d("cyan").GetData());
+    actor->GetProperty()->SetEdgeVisibility(0);
+    actor->GetProperty()->SetLineWidth(2.0);
+    actor->SetMapper(dtMap);
 
+    /*  define the selection style option  */
     vtkNew<vtkAreaPicker> areaPicker;
-    vtkNew<vtkRenderWindowInteractor> renderWindowInteractor;
-    renderWindowInteractor->SetPicker(areaPicker);
-    renderWindowInteractor->SetRenderWindow(renderWindow);
-
-    renderer->AddActor(actor);
-    renderer->SetBackground(colors->GetColor3d("Tan").GetData());
-
-    renderWindow->Render();
-
+    interact = renWin->GetInteractor();
+    interact->SetPicker(areaPicker);
     vtkNew<Pick> style;
     style->setPolyData(input);
-    renderWindowInteractor->SetInteractorStyle(style);
+    interact->SetInteractorStyle(style);
 
-    renderWindowInteractor->Start();
+    /*  configure the camera  */
+    configCamera();
 }
 
 /*  ============================================================================
@@ -383,35 +367,29 @@ void Viewer::Pick::OnLeftButtonUp() {
     if (CurrentMode == 1) {
         vtkNew<vtkNamedColors> colors;
 
-        vtkPlanes* frustum =
+        frustum =
             static_cast<vtkAreaPicker*>(this->GetInteractor()->GetPicker())
                 ->GetFrustum();
-
-        vtkNew<vtkExtractPolyDataGeometry> extractPolyDataGeometry;
-        extractPolyDataGeometry->SetInputData(polyData);
-        extractPolyDataGeometry->SetImplicitFunction(frustum);
-        extractPolyDataGeometry->Update();
+        polyGeometry->SetImplicitFunction(frustum);
+        polyGeometry->Update();
 
         std::cout << "Extracted "
-                  << extractPolyDataGeometry->GetOutput()->GetNumberOfCells()
-                  << " cells." << std::endl;
-        this->selectMap->SetInputData(extractPolyDataGeometry->GetOutput());
-        this->selectMap->ScalarVisibilityOff();
+                  << polyGeometry->GetOutput()->GetNumberOfCells() << " cells."
+                  << std::endl;
+        selectMap->SetInputData(polyGeometry->GetOutput());
+        selectMap->ScalarVisibilityOff();
 
-        // vtkIdTypeArray* ids =
-        // dynamic_cast<vtkIdTypeArray*>(selected->GetPointData()->GetArray("OriginalIds"));
-
-        this->selectActor->GetProperty()->SetColor(
+        selectActor->GetProperty()->SetColor(
             colors->GetColor3d("Tomato").GetData());
-        this->selectActor->GetProperty()->SetPointSize(5);
-        this->selectActor->GetProperty()->SetRepresentationToWireframe();
+        selectActor->GetProperty()->SetPointSize(15);
+        selectActor->GetProperty()->SetRepresentationToWireframe();
 
-        this->GetInteractor()
+        GetInteractor()
             ->GetRenderWindow()
             ->GetRenderers()
             ->GetFirstRenderer()
             ->AddActor(selectActor);
-        this->GetInteractor()->GetRenderWindow()->Render();
-        this->HighlightProp(NULL);
+        GetInteractor()->GetRenderWindow()->Render();
+        HighlightProp(NULL);
     }
 }

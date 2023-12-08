@@ -97,8 +97,6 @@ private:
         vtkDataSetMapper* selectMap;               // mappler of data selection
         vtkExtractPolyDataGeometry* polyGeometry;  // geometry
         vtkPlanes* frustum;                        // viewerport frustum
-        vtkRenderer* render;                       // renderer
-        vtkGenericOpenGLRenderWindow* renWin;      // render window
 
     public:
         /*  New: create the object using the VTK style  */
@@ -109,19 +107,17 @@ private:
             selectMap   = vtkDataSetMapper::New();
             selectActor = vtkActor::New();
             selectActor->SetMapper(selectMap);
+            polyGeometry = vtkExtractPolyDataGeometry::New();
         };
-        /*  Assign the basic variables  */
-        void setMapper(vtkDataSetMapper* dtMap) { selectMap = dtMap; }
-        void setActor(vtkActor*& actor) { selectActor = actor; }
+
         /*  OnLeftButtonUp: override the event for the left button up  */
         virtual void OnLeftButtonUp() override;
+
         /*  setPolyData: assign the poly data to the current object  */
-        void setPolyData(vtkPolyData* pd) { polyData = pd; };
-        void setRender(vtkRenderer*& ren) {
-            render = ren;
-            render->AddActor(selectActor);
-        }
-        void setRenWindow(vtkGenericOpenGLRenderWindow* win) { renWin = win; }
+        void setPolyData(vtkPolyData* pd) {
+            polyData = pd;
+            polyGeometry->SetInputData(polyData);
+        };
     };
 
 public:

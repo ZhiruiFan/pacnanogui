@@ -307,7 +307,7 @@ void Material::create() {
     exec();
 }
 
-/*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+/*  ============================================================================
  *  addItemDen: add the density item for the material properties list view*/
 void Material::addItemDen() {
     //  determine current edit property
@@ -327,7 +327,7 @@ void Material::addItemDen() {
     }
 }
 
-/*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+/*  ============================================================================
  *  add linear material item in listview  */
 void Material::addItemLinear() {
     //  determine current edit property
@@ -348,7 +348,7 @@ void Material::addItemLinear() {
     }
 }
 
-/*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+/*  ============================================================================
  *  add Neo-Hookean material item to the listview  */
 void Material::addItemNeo() {
     //  determine current edit property
@@ -369,7 +369,7 @@ void Material::addItemNeo() {
     }
 }
 
-/*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+/*  ============================================================================
  *  add thermal property items to the listview  */
 void Material::addItemThermo() {
     //  determine current edit property

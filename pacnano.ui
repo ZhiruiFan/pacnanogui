@@ -49,7 +49,7 @@
        <enum>Qt::Horizontal</enum>
       </property>
       <property name="handleWidth">
-       <number>3</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="layoutWidget">
        <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -549,13 +549,13 @@ QTreeView::branch:open:has-children:has-siblings  {
                 <widget class="QComboBox" name="vpSwtich">
                  <property name="minimumSize">
                   <size>
-                   <width>100</width>
+                   <width>110</width>
                    <height>0</height>
                   </size>
                  </property>
                  <property name="maximumSize">
                   <size>
-                   <width>100</width>
+                   <width>110</width>
                    <height>16777215</height>
                   </size>
                  </property>
