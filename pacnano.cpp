@@ -15,10 +15,7 @@
  *  */
 #include "pacnano.h"
 
-#include <QToolButton>
-
 #include "./ui_pacnano.h"
-#include "qpushbutton.h"
 
 pacnano::pacnano(QWidget* parent) : QMainWindow(parent), ui(new Ui::pacnano) {
     /*  CREATE UI  */
@@ -199,8 +196,10 @@ void pacnano::setupModel() {
 /*  ############################################################################
  *  setupMaterialDialog: setup the material create dialog  */
 void pacnano::setupMaterialCreation() {
-    //  clreate material manager
-    material = new Material;
+    //  create material manager
+    material  = new Material;
+    matAssign = new MatAssign(this);
+
     //  Function: create new material
     connect(ui->actTopMatManage, &QAction::triggered, material,
             &Material::manager);
@@ -211,4 +210,7 @@ void pacnano::setupMaterialCreation() {
             &Material::create);
     connect(ui->actTopMatCreate, &QAction::triggered, material,
             &Material::create);
+    //  Function: assign material
+    connect(ui->btnMatAssign, &QPushButton::clicked, matAssign,
+            &MatAssign::show);
 }

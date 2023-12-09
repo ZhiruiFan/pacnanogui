@@ -71,6 +71,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         viewer.h viewer.cpp
         optimization.h optimization.cpp optimization.ui
         field.h field.cpp
+        matassign.h matassign.cpp matassign.ui
     )
 
 # ##############################################################################

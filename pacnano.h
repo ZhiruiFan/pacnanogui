@@ -17,7 +17,9 @@
 #define PACNANO_H
 
 #include <QMainWindow>
+#include <QPushButton>
 
+#include "matassign.h"
 #include "material.h"
 #include "model.h"
 #include "open.h"
@@ -35,13 +37,14 @@ class pacnano : public QMainWindow {
     Q_OBJECT
 
 private:
-    Ui::pacnano *ui;     // ui interface
-    Remote *remote;      // remote server login UI
-    Open *openDir;       // open the directory
-    Project *project;    // pacnano project
-    Model *model;        //  model object
-    Material *material;  // material dialog
-    Viewer *win;         // render window
+    Ui::pacnano *ui;       // ui interface
+    Remote *remote;        // remote server login UI
+    Open *openDir;         // open the directory
+    Project *project;      // pacnano project
+    Model *model;          //  model object
+    Material *material;    // material dialog
+    Viewer *win;           // render window
+    MatAssign *matAssign;  // material assignment
 
 public:
     /*  constructor :

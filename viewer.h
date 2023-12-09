@@ -21,7 +21,6 @@
 #include <vtkAreaPicker.h>
 #include <vtkAxesActor.h>
 #include <vtkCamera.h>
-#include <vtkCellPicker.h>
 #include <vtkCellType.h>
 #include <vtkCommand.h>
 #include <vtkDataArray.h>
@@ -44,12 +43,14 @@
 #include <vtkProperty2D.h>
 #include <vtkRenderWindow.h>
 #include <vtkRenderWindowInteractor.h>
+#include <vtkRenderedAreaPicker.h>
 #include <vtkRenderer.h>
 #include <vtkRendererCollection.h>
 #include <vtkScalarBarActor.h>
 #include <vtkSmartPointer.h>
 #include <vtkTextActor.h>
 #include <vtkTextProperty.h>
+#include <vtkVertexGlyphFilter.h>
 
 #include <QList>
 #include <QObject>
@@ -84,7 +85,9 @@ private:
     bool isScalarBarPlayed;                // the scalarbar is acted or not
     vtkLookupTable* lut;                   // lookup table
     vtkRenderWindowInteractor* interact;   // interactor
-    vtkCellPicker* cellPicker;             // cell picker
+    vtkAreaPicker* areaPicker;             // area picker
+    vtkIdFilter* idFilter;                 // node or cell id filter
+    vtkDataSetSurfaceFilter* surfFilter;   // surface filter
 
     /*  data information  */
     QMap<int, char> compName = {{0, 'X'}, {1, 'Y'}, {2, 'Z'}};
@@ -92,33 +95,32 @@ private:
 private:
     class Pick : public vtkInteractorStyleRubberBandPick {
     private:
-        vtkPolyData* polyData;                     // ploy geometry of mesh
+        vtkGenericOpenGLRenderWindow* renWin;      // render window
+        vtkRenderer* ren;                          // renderer of the window
         vtkActor* selectActor;                     // actor for selection
         vtkDataSetMapper* selectMap;               // mappler of data selection
         vtkExtractPolyDataGeometry* polyGeometry;  // geometry
         vtkPlanes* frustum;                        // viewerport frustum
-
+        bool mode;                                 // node or cell mode
+        vtkAreaPicker* picker;                     // picker
     public:
         /*  New: create the object using the VTK style  */
         static Pick* New();
         vtkTypeMacro(Pick, vtkInteractorStyleRubberBandPick);
         /*  Constructor: create the Pick object  */
-        Pick() : vtkInteractorStyleRubberBandPick() {
-            selectMap   = vtkDataSetMapper::New();
-            selectActor = vtkActor::New();
-            selectActor->SetMapper(selectMap);
-            polyGeometry = vtkExtractPolyDataGeometry::New();
-        };
-
+        Pick();
         /*  OnLeftButtonUp: override the event for the left button up  */
         virtual void OnLeftButtonUp() override;
-
         /*  setPolyData: assign the poly data to the current object  */
-        void setPolyData(vtkPolyData* pd) {
-            polyData = pd;
-            polyGeometry->SetInputData(polyData);
-        };
-    };
+        void setPolyData(vtkPolyData* pt);
+        /*  setCellSelectMode: set the selection mode to cells  */
+        void setCellSelectMode() { mode = false; }
+        /*  setPointSelectMode: set the selection model to points  */
+        void setPointSelectMode() { mode = true; }
+        /*  setRenderInfo: set the render window and renderer */
+        void setRenderInfo(vtkGenericOpenGLRenderWindow*& renderWindow,
+                           vtkRenderer*& renderer);
+    }* pick;
 
 public:
     /*  constructor: create the render window to show the FEM model
@@ -159,8 +161,11 @@ public:
 
 private:
     /*  configure the small widget in the render window  */
-    void configCamera();     // configure the camera
-    void configScalarBar();  // scalar bar
+    void configCameraGeneral();  // configure the camera
+    void configCameraXY();       // set the camera to the XY plane
+    void configCameraYZ();       // set the camera to the YZ plane
+    void configCameraXZ();       // set the camera to the XZ plane
+    void configScalarBar();      // scalar bar
 
     /*  configure the status bar, which includes the system time, model
      *  information

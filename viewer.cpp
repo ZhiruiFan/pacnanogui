@@ -40,6 +40,12 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     actor = vtkActor::New();
     render->AddActor(actor);
 
+    /*  Picker vriables  */
+    idFilter   = vtkIdFilter::New();
+    surfFilter = vtkDataSetSurfaceFilter::New();
+    pick       = Pick::New();
+    areaPicker = vtkAreaPicker::New();
+
     /*  coordinates system  */
     axis    = vtkOrientationMarkerWidget::New();
     actaxis = vtkAxesActor::New();
@@ -73,10 +79,6 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     scalarBar         = vtkScalarBarActor::New();
     isScalarBarPlayed = false;
     configScalarBar();
-
-    /*  Picker  */
-    cellPicker = vtkCellPicker::New();
-    cellPicker->SetTolerance(0.01);
 
     /*  show the model */
     QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
@@ -130,7 +132,7 @@ void Viewer::showModel(Field*& field) {
     actor->SetMapper(dtMap);
 
     /*  configure the camera  */
-    configCamera();
+    configCameraGeneral();
 }
 
 /*  ----------------------------------------------------------------------------
@@ -152,7 +154,7 @@ void Viewer::showMesh(Field*& field) {
     actor->SetMapper(dtMap);
 
     /*  configure the camera  */
-    configCamera();
+    configCameraGeneral();
 }
 
 /*  ############################################################################
@@ -231,20 +233,32 @@ void Viewer::showPointField(Field*& field, const int& index, const int& comp) {
     render->AddActor2D(scalarBar);
 
     /*  Configure the camera  */
-    configCamera();
+    configCameraGeneral();
     renWin->Render();
 }
 
 /*  ============================================================================
  *  configCamera: configure the camera to show the FEM model appropriately  */
-void Viewer::configCamera() {
+void Viewer::configCameraGeneral() {
     /*  set the camera configuration  */
     render->ResetCamera();
     render->GetActiveCamera()->Elevation(60.0);
     render->GetActiveCamera()->Azimuth(30.0);
     render->GetActiveCamera()->Dolly(1.2);
-    render->GetActiveCamera()->SetClippingRange(
-        0.1, std::numeric_limits<double>::max());
+    //    render->GetActiveCamera()->SetClippingRange(
+    //        0.1, std::numeric_limits<double>::max());
+}
+/*  ============================================================================
+ *  configCamera: configure the camera to show the FEM model appropriately  */
+void Viewer::configCameraXY() {
+    /*  set the camera configuration  */
+    render->ResetCamera();
+    render->GetActiveCamera()->Elevation(0.0);
+    render->GetActiveCamera()->Azimuth(0.0);
+    render->GetActiveCamera()->Dolly(1.0);
+    //    render->GetActiveCamera()->SetClippingRange(
+    //        0.1, std::numeric_limits<double>::max());
+    render->GetActiveCamera()->ParallelProjectionOn();
 }
 
 /*  ============================================================================
@@ -307,31 +321,22 @@ void Viewer::configScalarBar() {
  *  pickCells: pick up the cells in the viewerport using the mouse box
  *  selection method.  */
 void Viewer::pickupCells(Field* field) {
-    /*  Create the Poly data from the field  */
-    vtkGeometryFilter* geom = vtkGeometryFilter::New();
-    geom->SetInputData(field->ugrid);
-    geom->Update();
-    vtkPolyData* polyData = geom->GetOutput();
-
     /*  Define the filter */
-    vtkNew<vtkIdFilter> idFilter;
-    idFilter->SetInputData(polyData);
-    idFilter->SetCellIdsArrayName("OriginalIds");
-    idFilter->SetPointIdsArrayName("OriginalIds");
+    idFilter->SetInputData(field->ugrid);
+    idFilter->SetCellIdsArrayName("ALL");
+    idFilter->SetPointIdsArrayName("ALL");
     idFilter->Update();
 
     /*  Convert the ouput of vtkIdFilter (vtkDataSet) back to vtkPolyData  */
-    vtkNew<vtkDataSetSurfaceFilter> surfaceFilter;
-    surfaceFilter->SetInputConnection(idFilter->GetOutputPort());
-    surfaceFilter->Update();
-    vtkPolyData* input = surfaceFilter->GetOutput();
+    surfFilter->SetInputConnection(idFilter->GetOutputPort());
+    surfFilter->Update();
 
     /*  set the head information  */
     QString info = "Geometry of the current model";
     configStatusBar(field->name, info);
 
     /*  set the data to the viewer  */
-    dtMap->SetInputData(polyData);
+    dtMap->SetInputData(idFilter->GetOutput());
     dtMap->ScalarVisibilityOff();
 
     /*  configure the actor  */
@@ -340,22 +345,49 @@ void Viewer::pickupCells(Field* field) {
     actor->GetProperty()->SetLineWidth(2.0);
     actor->SetMapper(dtMap);
 
-    /*  define the selection style option  */
-    vtkNew<vtkAreaPicker> areaPicker;
+    /*  create the area picker  */
     interact = renWin->GetInteractor();
     interact->SetPicker(areaPicker);
-    vtkNew<Pick> style;
-    style->setPolyData(input);
-    interact->SetInteractorStyle(style);
 
     /*  configure the camera  */
-    configCamera();
-}
+    configCameraGeneral();
 
+    /*  create the picker  */
+    pick->setPolyData(surfFilter->GetOutput());
+    pick->setRenderInfo(renWin, render);
+    pick->setPointSelectMode();
+    //    pick->setCellSelectMode();
+    interact->SetInteractorStyle(pick);
+    pick->OnLeftButtonUp();
+}
 /*  ============================================================================
  *  New: define the New function using the built-in interface of VTK  */
 vtkStandardNewMacro(Viewer::Pick);
 
+/*  ============================================================================
+ *  Constructor: create the Pick object  */
+Viewer::Pick::Pick() : vtkInteractorStyleRubberBandPick() {
+    selectMap   = vtkDataSetMapper::New();
+    selectActor = vtkActor::New();
+    selectActor->SetMapper(selectMap);
+    polyGeometry = vtkExtractPolyDataGeometry::New();
+    CurrentMode  = 1;
+};
+
+/*  ============================================================================
+ *  setPolyData: assign the poly data to the current object  */
+void Viewer::Pick::setPolyData(vtkPolyData* pt) {
+    polyGeometry->SetInputData(pt);
+};
+
+/*  ============================================================================
+ *  setRenderInfo: set the render window and renderer */
+void Viewer::Pick::setRenderInfo(vtkGenericOpenGLRenderWindow*& renderWindow,
+                                 vtkRenderer*& renderer) {
+    renWin = renderWindow;
+    ren    = renderer;
+    ren->AddActor(selectActor);
+}
 /*  ============================================================================
  *  OnLectButtonUp: the overrided member function to define the event when the \
  *  left mouse button is up  */
@@ -365,31 +397,53 @@ void Viewer::Pick::OnLeftButtonUp() {
 
     /*  if the selection mode is actived  */
     if (CurrentMode == 1) {
+        /*  using the system defined configuration  */
         vtkNew<vtkNamedColors> colors;
 
-        frustum =
-            static_cast<vtkAreaPicker*>(this->GetInteractor()->GetPicker())
-                ->GetFrustum();
+        /*  define the frustum of the viewer port  */
+        picker  = static_cast<vtkAreaPicker*>(GetInteractor()->GetPicker());
+        frustum = picker->GetFrustum();
         polyGeometry->SetImplicitFunction(frustum);
+
+        /*  update the poly geometry of the selected object  */
         polyGeometry->Update();
 
-        std::cout << "Extracted "
-                  << polyGeometry->GetOutput()->GetNumberOfCells() << " cells."
-                  << std::endl;
-        selectMap->SetInputData(polyGeometry->GetOutput());
+        /*  configuration for the dataset mapper  */
         selectMap->ScalarVisibilityOff();
+        //  Point selection mode
+        if (mode) {
+            //  define the point filter
+            vtkVertexGlyphFilter* filter = vtkVertexGlyphFilter::New();
+            filter->SetInputConnection(polyGeometry->GetOutputPort());
+            filter->Update();
+            //  set the dataset mapper
+            selectMap->SetInputData(filter->GetOutput());
+            //  display the number of selected object
+            std::cout << "Extracted "
+                      << polyGeometry->GetOutput()->GetNumberOfPoints()
+                      << " Points." << std::endl;
+            //  configuration for the actor displaying
+            selectActor->GetProperty()->SetRepresentationToPoints();
+            selectActor->GetProperty()->SetPointSize(5);
+            selectActor->GetProperty()->SetVertexVisibility(true);
+        }
+        //  Cell selection mode
+        else {
+            //  set the dataset mapper
+            selectMap->SetInputData(polyGeometry->GetOutput());
+            std::cout << "Extracted "
+                      << polyGeometry->GetOutput()->GetNumberOfCells()
+                      << " cells." << std::endl;
+            //  configuration of the actor displaying
+            selectActor->GetProperty()->SetRepresentationToWireframe();
+        }
 
+        /*  configuration of the actor  */
         selectActor->GetProperty()->SetColor(
             colors->GetColor3d("Tomato").GetData());
-        selectActor->GetProperty()->SetPointSize(15);
-        selectActor->GetProperty()->SetRepresentationToWireframe();
 
-        GetInteractor()
-            ->GetRenderWindow()
-            ->GetRenderers()
-            ->GetFirstRenderer()
-            ->AddActor(selectActor);
-        GetInteractor()->GetRenderWindow()->Render();
+        /*  render the window  */
+        renWin->Render();
         HighlightProp(NULL);
     }
 }
