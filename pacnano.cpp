@@ -33,21 +33,9 @@ pacnano::pacnano(QWidget* parent) : QMainWindow(parent), ui(new Ui::pacnano) {
     setupModel();             // setup model environment
     setupMaterialCreation();  // material creation
     setupViewportSwitch();    // viewport setting
+    setupRenderWindow();      // set up the vtk render window
 
     /*  openGL widget to show the FEM model  */
-    win = new Viewer(ui->openGLWidget);
-
-    connect(ui->actSelect, &QAction::triggered, win, [&]() {
-        /*  show the model */
-        QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
-        Field* field = new Field(file);
-        //    showModel(file);
-        //    showMesh(field);
-        //    std::string name = "U";
-        //    int comp         = 0;
-        //    showPointField(field, 0, 0);
-        win->pickupCells(field);
-    });
 }
 
 /*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -59,7 +47,7 @@ pacnano::~pacnano() {
     delete openDir;   // pen directory dialog
     delete project;   // project object
     delete material;  // material object
-    delete win;       // render window
+    delete renWin;    // render window
 }
 
 /*  ############################################################################
@@ -213,4 +201,52 @@ void pacnano::setupMaterialCreation() {
     //  Function: assign material
     connect(ui->btnMatAssign, &QPushButton::clicked, matAssign,
             &MatAssign::show);
+}
+
+/*  setupRenderWindow: setup the render window for the model displaying,
+ *  such as show the geometry, mesh, rotate the viewport, and zoom the
+ *  viewport and so on   */
+void pacnano::setupRenderWindow() {
+    /*  Create the render window  */
+    renWin = new Viewer(ui->openGLWidget);
+
+    /*  connect to the node selection  */
+    connect(ui->actNodeSelect, &QAction::triggered, renWin, [&]() {
+        /*  show the model */
+        QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
+        Field* field = new Field(file);
+        renWin->pickupCells(field, true);
+    });
+
+    /*  connect to the element selection  */
+    connect(ui->actElemSelect, &QAction::triggered, renWin, [&]() {
+        /*  show the model */
+        QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
+        Field* field = new Field(file);
+        renWin->pickupCells(field, false);
+    });
+
+    /*  connect to show geometry  */
+    connect(ui->actShowGeom, &QAction::triggered, renWin, [&]() {
+        QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
+        Field* field = new Field(file);
+        renWin->showModel(field);
+    });
+
+    /*  connect to show geometry  */
+    connect(ui->actShowMesh, &QAction::triggered, renWin, [&]() {
+        QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
+        Field* field = new Field(file);
+        renWin->showMesh(field);
+    });
+
+    /*  show the plane view  */
+    connect(ui->actXY, &QAction::triggered, renWin,
+            [&]() { renWin->configCameraXY(); });
+    connect(ui->actYZ, &QAction::triggered, renWin,
+            [&]() { renWin->configCameraYZ(); });
+    connect(ui->actXZ, &QAction::triggered, renWin,
+            [&]() { renWin->configCameraXZ(); });
+    connect(ui->actXYZ, &QAction::triggered, renWin,
+            [&]() { renWin->configCameraGeneral(); });
 }

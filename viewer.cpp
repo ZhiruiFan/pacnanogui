@@ -16,8 +16,6 @@
 
 #include "viewer.h"
 
-#include <vtkInformationKey.h>
-
 /*  ############################################################################
  *  Constructor: create the viewer object the initialize the diply
  *  @param  window: the object to the show the FEM model  */
@@ -41,6 +39,8 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     render->AddActor(actor);
 
     /*  Picker vriables  */
+    interact   = renWin->GetInteractor();
+    initStyle  = vtkInteractorStyleTrackballCamera::New();
     idFilter   = vtkIdFilter::New();
     surfFilter = vtkDataSetSurfaceFilter::New();
     pick       = Pick::New();
@@ -80,15 +80,10 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     isScalarBarPlayed = false;
     configScalarBar();
 
-    /*  show the model */
-    QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
-    Field* field = new Field(file);
-    //    showModel(field);
-    //    showMesh(field);
-    //    std::string name = "U";
-    //    int comp         = 0;
-    //    showPointField(field, 0, 0);
-    pickupCells(field);
+    /*  Camera configuration  */
+    originCamera = vtkCamera::New();
+    originCamera->DeepCopy(render->GetActiveCamera());
+    configCameraGeneral();
 }
 
 /*  ----------------------------------------------------------------------------
@@ -117,6 +112,10 @@ Viewer::~Viewer() {
  *  showModel: display the model geometry in the viewer object
  *  @param  index: the index of the model that will be shown  */
 void Viewer::showModel(Field*& field) {
+    /*  reset the interactor style  */
+    pick->turnOff();
+    interact->SetInteractorStyle(initStyle);
+
     /*  set the head information  */
     QString info = "Geometry of the current model";
     configStatusBar(field->name, info);
@@ -131,30 +130,35 @@ void Viewer::showModel(Field*& field) {
     actor->GetProperty()->SetLineWidth(2.0);
     actor->SetMapper(dtMap);
 
-    /*  configure the camera  */
-    configCameraGeneral();
+    /*  show mesh and config camera  */
+    render->ResetCamera();
+    renWin->Render();
 }
 
 /*  ----------------------------------------------------------------------------
  *  showMesh: display the FEM model in the viewer object
  *  @param  file: the file to read the model mesh information  */
 void Viewer::showMesh(Field*& field) {
+    /*  turn off the picker  */
+    pick->turnOff();
+
     /*  set the head information  */
     QString info = "Geometry of the current model";
     configStatusBar(field->name, info);
 
     /*  set the data to the viewer  */
-    dtMap->SetInputConnection(field->port);
+    //    dtMap->SetInputConnection(field->port);
     dtMap->ScalarVisibilityOff();
 
     /*  configure the actor  */
     actor->GetProperty()->SetColor(colors->GetColor3d("cyan").GetData());
     actor->GetProperty()->SetEdgeVisibility(1);
     actor->GetProperty()->SetLineWidth(0.0);
-    actor->SetMapper(dtMap);
+    //    actor->SetMapper(dtMap);
 
-    /*  configure the camera  */
-    configCameraGeneral();
+    /*  show mesh and config camera  */
+    //    render->ResetCamera();
+    renWin->Render();
 }
 
 /*  ############################################################################
@@ -232,33 +236,62 @@ void Viewer::showPointField(Field*& field, const int& index, const int& comp) {
     actor->GetProperty()->SetLineWidth(0.0);
     render->AddActor2D(scalarBar);
 
-    /*  Configure the camera  */
-    configCameraGeneral();
+    /*  Render the window  */
     renWin->Render();
 }
 
 /*  ============================================================================
  *  configCamera: configure the camera to show the FEM model appropriately  */
 void Viewer::configCameraGeneral() {
+    /*  reset to camera to the original  */
+    render->GetActiveCamera()->DeepCopy(originCamera);
     /*  set the camera configuration  */
+    render->GetActiveCamera()->Elevation(45.0);
+    render->GetActiveCamera()->Azimuth(45.0);
+    render->GetActiveCamera()->Dolly(1.0);
     render->ResetCamera();
-    render->GetActiveCamera()->Elevation(60.0);
-    render->GetActiveCamera()->Azimuth(30.0);
-    render->GetActiveCamera()->Dolly(1.2);
-    //    render->GetActiveCamera()->SetClippingRange(
-    //        0.1, std::numeric_limits<double>::max());
+    renWin->Render();
 }
 /*  ============================================================================
  *  configCamera: configure the camera to show the FEM model appropriately  */
 void Viewer::configCameraXY() {
+    /*  reset to camera to the original  */
+    render->GetActiveCamera()->DeepCopy(originCamera);
     /*  set the camera configuration  */
-    render->ResetCamera();
     render->GetActiveCamera()->Elevation(0.0);
     render->GetActiveCamera()->Azimuth(0.0);
     render->GetActiveCamera()->Dolly(1.0);
-    //    render->GetActiveCamera()->SetClippingRange(
-    //        0.1, std::numeric_limits<double>::max());
     render->GetActiveCamera()->ParallelProjectionOn();
+    render->ResetCamera();
+    renWin->Render();
+}
+
+/*  ============================================================================
+ *  configCamera: configure the camera to show the FEM model appropriately  */
+void Viewer::configCameraXZ() {
+    /*  reset to camera to the original  */
+    render->GetActiveCamera()->DeepCopy(originCamera);
+    /*  set the camera configuration  */
+    render->GetActiveCamera()->Elevation(-90.0);
+    render->GetActiveCamera()->Azimuth(90.0);
+    render->GetActiveCamera()->SetViewUp(0, 0, 1);
+    render->GetActiveCamera()->ParallelProjectionOn();
+    render->ResetCamera();
+    renWin->Render();
+}
+
+/*  ============================================================================
+ *  configCamera: configure the camera to show the FEM model appropriately  */
+void Viewer::configCameraYZ() {
+    /*  reset to camera to the original  */
+    render->GetActiveCamera()->DeepCopy(originCamera);
+
+    /*  set the camera configuration  */
+    render->GetActiveCamera()->Elevation(0.0);
+    render->GetActiveCamera()->Azimuth(-90.0);
+    render->GetActiveCamera()->ParallelProjectionOn();
+    render->ResetCamera();
+    renWin->Render();
 }
 
 /*  ============================================================================
@@ -319,8 +352,11 @@ void Viewer::configScalarBar() {
 
 /*  ############################################################################
  *  pickCells: pick up the cells in the viewerport using the mouse box
- *  selection method.  */
-void Viewer::pickupCells(Field* field) {
+ *  selection method.
+ *  @param  field: the field that will be shown
+ *  @param  mode: node or element selection mode, if true, then node selection
+ *                mode; else element selection mode  */
+void Viewer::pickupCells(Field* field, bool mode) {
     /*  Define the filter */
     idFilter->SetInputData(field->ugrid);
     idFilter->SetCellIdsArrayName("ALL");
@@ -346,19 +382,23 @@ void Viewer::pickupCells(Field* field) {
     actor->SetMapper(dtMap);
 
     /*  create the area picker  */
-    interact = renWin->GetInteractor();
     interact->SetPicker(areaPicker);
-
-    /*  configure the camera  */
-    configCameraGeneral();
 
     /*  create the picker  */
     pick->setPolyData(surfFilter->GetOutput());
     pick->setRenderInfo(renWin, render);
-    pick->setPointSelectMode();
-    //    pick->setCellSelectMode();
+    //  determine the selection mode
+    if (mode) {
+        pick->setPointSelectMode();
+    } else {
+        pick->setCellSelectMode();
+    }
+    //  set the picker to the interactor
     interact->SetInteractorStyle(pick);
     pick->OnLeftButtonUp();
+
+    /*  config the camera  */
+    render->ResetCamera();
 }
 /*  ============================================================================
  *  New: define the New function using the built-in interface of VTK  */
@@ -367,11 +407,16 @@ vtkStandardNewMacro(Viewer::Pick);
 /*  ============================================================================
  *  Constructor: create the Pick object  */
 Viewer::Pick::Pick() : vtkInteractorStyleRubberBandPick() {
+    /*  create the variables  */
     selectMap   = vtkDataSetMapper::New();
     selectActor = vtkActor::New();
     selectActor->SetMapper(selectMap);
     polyGeometry = vtkExtractPolyDataGeometry::New();
-    CurrentMode  = 1;
+
+    /*  activate the selection mode  */
+    CurrentMode = 1;
+    /*  turn off the picking operation  */
+    isActivated = false;
 };
 
 /*  ============================================================================
@@ -384,9 +429,12 @@ void Viewer::Pick::setPolyData(vtkPolyData* pt) {
  *  setRenderInfo: set the render window and renderer */
 void Viewer::Pick::setRenderInfo(vtkGenericOpenGLRenderWindow*& renderWindow,
                                  vtkRenderer*& renderer) {
+    /*  assign renderer information  */
     renWin = renderWindow;
     ren    = renderer;
+    /*  add actor  */
     ren->AddActor(selectActor);
+    isActivated = true;
 }
 /*  ============================================================================
  *  OnLectButtonUp: the overrided member function to define the event when the \
@@ -445,5 +493,17 @@ void Viewer::Pick::OnLeftButtonUp() {
         /*  render the window  */
         renWin->Render();
         HighlightProp(NULL);
+    }
+}
+
+/*  ===========================================================================
+ *  turnOff: turn off the selection mode, i.e., remove the selection
+ *           actor from the render window  */
+void Viewer::Pick::turnOff() {
+    if (isActivated) {
+        //  remove the selection actor
+        ren->RemoveActor(selectActor);
+        //  update the status flag
+        isActivated = false;
     }
 }

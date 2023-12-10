@@ -21,8 +21,6 @@
 #include <vtkAreaPicker.h>
 #include <vtkAxesActor.h>
 #include <vtkCamera.h>
-#include <vtkCellType.h>
-#include <vtkCommand.h>
 #include <vtkDataArray.h>
 #include <vtkDataSetMapper.h>
 #include <vtkDataSetSurfaceFilter.h>
@@ -32,9 +30,9 @@
 #include <vtkGeometryFilter.h>
 #include <vtkIdFilter.h>
 #include <vtkInteractorStyleRubberBandPick.h>
+#include <vtkInteractorStyleTrackballCamera.h>
 #include <vtkLookupTable.h>
 #include <vtkNamedColors.h>
-#include <vtkNew.h>
 #include <vtkOrientationMarkerWidget.h>
 #include <vtkPlanes.h>
 #include <vtkPolyDataMapper.h>
@@ -43,9 +41,7 @@
 #include <vtkProperty2D.h>
 #include <vtkRenderWindow.h>
 #include <vtkRenderWindowInteractor.h>
-#include <vtkRenderedAreaPicker.h>
 #include <vtkRenderer.h>
-#include <vtkRendererCollection.h>
 #include <vtkScalarBarActor.h>
 #include <vtkSmartPointer.h>
 #include <vtkTextActor.h>
@@ -55,10 +51,7 @@
 #include <QList>
 #include <QObject>
 #include <QWidget>
-#include <chrono>
 #include <ctime>
-#include <iostream>
-#include <sstream>
 
 #include "field.h"
 
@@ -70,24 +63,29 @@ class Viewer : public QWidget {
     Q_OBJECT
 
 private:
-    /*  Viewport variables  */
-    QVTKOpenGLNativeWidget* win;           // main window
-    vtkGenericOpenGLRenderWindow* renWin;  // render window
-    vtkRenderer* render;                   // render object
-    vtkNamedColors* colors;                // color object
-    vtkDataSetMapper* dtMap;               // data set mapper
-    vtkActor* actor;                       //  actor of the viewerport
-    vtkOrientationMarkerWidget* axis;      // axis object
-    vtkAxesActor* actaxis;                 // axis actor
-    std::stringstream time;                // current time
-    vtkTextActor* status;                  // status bar
-    vtkScalarBarActor* scalarBar;          // scalar bar
-    bool isScalarBarPlayed;                // the scalarbar is acted or not
-    vtkLookupTable* lut;                   // lookup table
-    vtkRenderWindowInteractor* interact;   // interactor
-    vtkAreaPicker* areaPicker;             // area picker
-    vtkIdFilter* idFilter;                 // node or cell id filter
-    vtkDataSetSurfaceFilter* surfFilter;   // surface filter
+    QVTKOpenGLNativeWidget* win;                   // main window
+    vtkGenericOpenGLRenderWindow* renWin;          // render window
+    vtkRenderer* render;                           // render object
+    vtkNamedColors* colors;                        // color object
+    vtkDataSetMapper* dtMap;                       // data set mapper
+    vtkLookupTable* lut;                           // lookup table
+    vtkCamera* originCamera;                       // original camera
+
+    vtkActor* actor;                               //  actor of the viewerport
+    vtkAxesActor* actaxis;                         // axis actor
+    vtkOrientationMarkerWidget* axis;              // axis object
+    vtkScalarBarActor* scalarBar;                  // scalar bar
+    bool isScalarBarPlayed;                        // the scalarbar is acted
+    vtkTextActor* status;                          // status bar
+    std::stringstream time;                        // current time
+
+    vtkRenderWindowInteractor* interact;           // interactor
+    vtkInteractorStyleTrackballCamera* initStyle;  // initial style
+    vtkAreaPicker* areaPicker;                     // area picker
+    vtkIdFilter* idFilter;                         // node or cell id filter
+    vtkDataSetSurfaceFilter* surfFilter;           // surface filter
+
+    double angleInc;                               // angle increment
 
     /*  data information  */
     QMap<int, char> compName = {{0, 'X'}, {1, 'Y'}, {2, 'Z'}};
@@ -101,25 +99,38 @@ private:
         vtkDataSetMapper* selectMap;               // mappler of data selection
         vtkExtractPolyDataGeometry* polyGeometry;  // geometry
         vtkPlanes* frustum;                        // viewerport frustum
-        bool mode;                                 // node or cell mode
         vtkAreaPicker* picker;                     // picker
+        bool mode;                                 // node or cell mode
+        bool isActivated;                          // status flag
+
     public:
         /*  New: create the object using the VTK style  */
         static Pick* New();
         vtkTypeMacro(Pick, vtkInteractorStyleRubberBandPick);
         /*  Constructor: create the Pick object  */
         Pick();
+
         /*  OnLeftButtonUp: override the event for the left button up  */
         virtual void OnLeftButtonUp() override;
-        /*  setPolyData: assign the poly data to the current object  */
+
+        /*  setPolyData: assign the poly data to the current object
+         *  @param  pt: the Polygon data  */
         void setPolyData(vtkPolyData* pt);
+
         /*  setCellSelectMode: set the selection mode to cells  */
         void setCellSelectMode() { mode = false; }
         /*  setPointSelectMode: set the selection model to points  */
         void setPointSelectMode() { mode = true; }
-        /*  setRenderInfo: set the render window and renderer */
+
+        /*  setRenderInfo: set the render window and renderer
+         *  @param  renderWindow: the window to show the model
+         *  @param  renderer: the rendered object  */
         void setRenderInfo(vtkGenericOpenGLRenderWindow*& renderWindow,
                            vtkRenderer*& renderer);
+
+        /*  turnOff: turn off the selection mode, i.e., remove the selection
+         *      actor from the render window  */
+        void turnOff();
     }* pick;
 
 public:
@@ -156,10 +167,13 @@ public:
     void extractFieldData(vtkUnstructuredGrid*& grid);
 
     /*  pickCells: pick up the cells in the viewerport using the mouse box
-     *  selection method.  */
-    void pickupCells(Field* field);
+     *  selection method.
+     *  @param  filed: the field variable that will be shown
+     *  @param  mode: node or element selection mode. If true, the node
+     *                selection mode is activated. Otherwise, the element
+     *                selection mode is activated.  */
+    void pickupCells(Field* field, bool mode);
 
-private:
     /*  configure the small widget in the render window  */
     void configCameraGeneral();  // configure the camera
     void configCameraXY();       // set the camera to the XY plane
@@ -167,6 +181,7 @@ private:
     void configCameraXZ();       // set the camera to the XZ plane
     void configScalarBar();      // scalar bar
 
+private:
     /*  configure the status bar, which includes the system time, model
      *  information
      *  @param  file: the model that will be displayed

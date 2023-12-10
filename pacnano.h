@@ -43,7 +43,7 @@ private:
     Project *project;      // pacnano project
     Model *model;          //  model object
     Material *material;    // material dialog
-    Viewer *win;           // render window
+    Viewer *renWin;        // render window
     MatAssign *matAssign;  // material assignment
 
 public:
@@ -66,5 +66,10 @@ private:
 
     /*  setupMaterialDialog: setup the material create dialog  */
     void setupMaterialCreation();
+
+    /*  setupRenderWindow: setup the render window for the model displaying,
+     *  such as show the geometry, mesh, rotate the viewport, and zoom the
+     *  viewport and so on   */
+    void setupRenderWindow();
 };
 #endif

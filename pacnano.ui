@@ -2618,20 +2618,58 @@ QTreeView::branch:open:has-children:has-siblings  {
     <property name="title">
      <string>&amp;View</string>
     </property>
+    <widget class="QMenu" name="menuZoom">
+     <property name="title">
+      <string>Zoom</string>
+     </property>
+     <property name="icon">
+      <iconset resource="icons.qrc">
+       <normaloff>:/icons/zoom.png</normaloff>:/icons/zoom.png</iconset>
+     </property>
+     <addaction name="actZoomIn"/>
+     <addaction name="actZoomOut"/>
+    </widget>
+    <widget class="QMenu" name="menuRotation">
+     <property name="title">
+      <string>Rotation</string>
+     </property>
+     <property name="icon">
+      <iconset resource="icons.qrc">
+       <normaloff>:/icons/rotation.png</normaloff>:/icons/rotation.png</iconset>
+     </property>
+     <addaction name="actionRoll_left"/>
+     <addaction name="actionRoll_right"/>
+     <addaction name="separator"/>
+     <addaction name="actionRoll_up"/>
+     <addaction name="actionRoll_down"/>
+    </widget>
+    <widget class="QMenu" name="menuPlane_view">
+     <property name="title">
+      <string>Plane view</string>
+     </property>
+     <property name="icon">
+      <iconset resource="icons.qrc">
+       <normaloff>:/icons/plane_viewer.png</normaloff>:/icons/plane_viewer.png</iconset>
+     </property>
+     <addaction name="actXY"/>
+     <addaction name="actYZ"/>
+     <addaction name="actXZ"/>
+    </widget>
     <addaction name="actMove"/>
-    <addaction name="actRotation"/>
-    <addaction name="actZoomIn"/>
-    <addaction name="actZoomOut"/>
+    <addaction name="menuZoom"/>
+    <addaction name="menuRotation"/>
+    <addaction name="menuPlane_view"/>
+    <addaction name="actXYZ"/>
     <addaction name="separator"/>
-    <addaction name="actXY"/>
-    <addaction name="actYZ"/>
-    <addaction name="actXZ"/>
+    <addaction name="actShowGeom"/>
+    <addaction name="actShowMesh"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
      <string>Tools</string>
     </property>
-    <addaction name="actSelect"/>
+    <addaction name="actNodeSelect"/>
+    <addaction name="actElemSelect"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -2874,12 +2912,24 @@ QTreeView::branch:open:has-children:has-siblings  {
     <enum>TopToolBarArea</enum>
    </attribute>
    <attribute name="toolBarBreak">
-    <bool>false</bool>
+    <bool>true</bool>
    </attribute>
    <addaction name="actMove"/>
-   <addaction name="actRotation"/>
    <addaction name="actZoomIn"/>
    <addaction name="actZoomOut"/>
+   <addaction name="separator"/>
+   <addaction name="actionRoll_right"/>
+   <addaction name="actionRoll_left"/>
+   <addaction name="actionRoll_up"/>
+   <addaction name="actionRoll_down"/>
+   <addaction name="separator"/>
+   <addaction name="actXY"/>
+   <addaction name="actYZ"/>
+   <addaction name="actXZ"/>
+   <addaction name="actXYZ"/>
+   <addaction name="separator"/>
+   <addaction name="actShowGeom"/>
+   <addaction name="actShowMesh"/>
   </widget>
   <widget class="QToolBar" name="toolBar_4">
    <property name="windowTitle">
@@ -3718,9 +3768,77 @@ QTreeView::branch:open:has-children:has-siblings  {
     <string>Model Manager</string>
    </property>
   </action>
-  <action name="actSelect">
+  <action name="actNodeSelect">
    <property name="text">
-    <string>Select</string>
+    <string>Node selection</string>
+   </property>
+  </action>
+  <action name="actElemSelect">
+   <property name="text">
+    <string>Element selection</string>
+   </property>
+  </action>
+  <action name="actionRoll_left">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/rotate_left.png</normaloff>:/icons/rotate_left.png</iconset>
+   </property>
+   <property name="text">
+    <string>Rotate to left</string>
+   </property>
+  </action>
+  <action name="actionRoll_right">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/rotate_right.png</normaloff>:/icons/rotate_right.png</iconset>
+   </property>
+   <property name="text">
+    <string>Rotate to right</string>
+   </property>
+  </action>
+  <action name="actionRoll_up">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/rotate_up.png</normaloff>:/icons/rotate_up.png</iconset>
+   </property>
+   <property name="text">
+    <string>Rotate up</string>
+   </property>
+  </action>
+  <action name="actionRoll_down">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/rotate_down.png</normaloff>:/icons/rotate_down.png</iconset>
+   </property>
+   <property name="text">
+    <string>Rotate down</string>
+   </property>
+  </action>
+  <action name="actXYZ">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/xyz.png</normaloff>:/icons/xyz.png</iconset>
+   </property>
+   <property name="text">
+    <string>Axonometric view</string>
+   </property>
+  </action>
+  <action name="actShowGeom">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/show_geometry.png</normaloff>:/icons/show_geometry.png</iconset>
+   </property>
+   <property name="text">
+    <string>Show geometry</string>
+   </property>
+  </action>
+  <action name="actShowMesh">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/mesh.jpg</normaloff>:/icons/mesh.jpg</iconset>
+   </property>
+   <property name="text">
+    <string>Show mesh</string>
    </property>
   </action>
  </widget>
