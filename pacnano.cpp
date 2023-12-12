@@ -208,37 +208,26 @@ void pacnano::setupMaterialCreation() {
  *  viewport and so on   */
 void pacnano::setupRenderWindow() {
     /*  Create the render window  */
-    renWin = new Viewer(ui->openGLWidget);
+    renWin       = new Viewer(ui->openGLWidget);
+    QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
+    Field* field = new Field(file);
+    renWin->setInputData(field);
 
     /*  connect to the node selection  */
-    connect(ui->actNodeSelect, &QAction::triggered, renWin, [&]() {
-        /*  show the model */
-        QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
-        Field* field = new Field(file);
-        renWin->pickupCells(field, true);
-    });
+    connect(ui->actNodeSelect, &QAction::triggered, renWin,
+            [&]() { renWin->pickupCells(false); });
 
     /*  connect to the element selection  */
-    connect(ui->actElemSelect, &QAction::triggered, renWin, [&]() {
-        /*  show the model */
-        QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
-        Field* field = new Field(file);
-        renWin->pickupCells(field, false);
-    });
+    connect(ui->actElemSelect, &QAction::triggered, renWin,
+            [&]() { renWin->pickupCells(true); });
 
     /*  connect to show geometry  */
-    connect(ui->actShowGeom, &QAction::triggered, renWin, [&]() {
-        QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
-        Field* field = new Field(file);
-        renWin->showModel(field);
-    });
+    connect(ui->actShowGeom, &QAction::triggered, renWin,
+            [&]() { renWin->showModel(); });
 
     /*  connect to show geometry  */
-    connect(ui->actShowMesh, &QAction::triggered, renWin, [&]() {
-        QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
-        Field* field = new Field(file);
-        renWin->showMesh(field);
-    });
+    connect(ui->actShowMesh, &QAction::triggered, renWin,
+            [&]() { renWin->showMesh(); });
 
     /*  show the plane view  */
     connect(ui->actXY, &QAction::triggered, renWin,
@@ -249,4 +238,12 @@ void pacnano::setupRenderWindow() {
             [&]() { renWin->configCameraXZ(); });
     connect(ui->actXYZ, &QAction::triggered, renWin,
             [&]() { renWin->configCameraGeneral(); });
+
+    /*  hide or extract selection  */
+    connect(ui->actHideSelect, &QAction::triggered, renWin,
+            [&]() { renWin->hideSelectedCells(); });
+    connect(ui->actHideReverse, &QAction::triggered, renWin,
+            [&]() { renWin->showSelectedCells(); });
+    connect(ui->actShowAll, &QAction::triggered, renWin,
+            [&]() { renWin->showCompleteModel(); });
 }

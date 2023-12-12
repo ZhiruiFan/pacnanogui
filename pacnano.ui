@@ -2663,6 +2663,10 @@ QTreeView::branch:open:has-children:has-siblings  {
     <addaction name="separator"/>
     <addaction name="actShowGeom"/>
     <addaction name="actShowMesh"/>
+    <addaction name="separator"/>
+    <addaction name="actHideSelect"/>
+    <addaction name="actHideReverse"/>
+    <addaction name="actShowAll"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -2930,6 +2934,10 @@ QTreeView::branch:open:has-children:has-siblings  {
    <addaction name="separator"/>
    <addaction name="actShowGeom"/>
    <addaction name="actShowMesh"/>
+   <addaction name="separator"/>
+   <addaction name="actHideSelect"/>
+   <addaction name="actHideReverse"/>
+   <addaction name="actShowAll"/>
   </widget>
   <widget class="QToolBar" name="toolBar_4">
    <property name="windowTitle">
@@ -2948,7 +2956,7 @@ QTreeView::branch:open:has-children:has-siblings  {
     <enum>TopToolBarArea</enum>
    </attribute>
    <attribute name="toolBarBreak">
-    <bool>true</bool>
+    <bool>false</bool>
    </attribute>
    <addaction name="actTopProjNew"/>
    <addaction name="actTopProjOpen"/>
@@ -3839,6 +3847,33 @@ QTreeView::branch:open:has-children:has-siblings  {
    </property>
    <property name="text">
     <string>Show mesh</string>
+   </property>
+  </action>
+  <action name="actHideSelect">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/show_reverse.png</normaloff>:/icons/show_reverse.png</iconset>
+   </property>
+   <property name="text">
+    <string>Hide selected</string>
+   </property>
+  </action>
+  <action name="actHideReverse">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/show_extract.png</normaloff>:/icons/show_extract.png</iconset>
+   </property>
+   <property name="text">
+    <string>Extract selected</string>
+   </property>
+  </action>
+  <action name="actShowAll">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/show_all.png</normaloff>:/icons/show_all.png</iconset>
+   </property>
+   <property name="text">
+    <string>Show all</string>
    </property>
   </action>
  </widget>

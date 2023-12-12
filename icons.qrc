@@ -89,5 +89,8 @@
         <file>icons/xyz.png</file>
         <file>icons/show_geometry.png</file>
         <file>icons/show_mesh.png</file>
+        <file>icons/show_all.png</file>
+        <file>icons/show_extract.png</file>
+        <file>icons/show_reverse.png</file>
     </qresource>
 </RCC>

@@ -31,6 +31,10 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     colors = vtkNamedColors::New();
     render->SetBackground(colors->GetColor3d("White").GetData());
 
+    /*  field variables  */
+    ugridCur       = vtkUnstructuredGrid::New();
+    isAssigedField = false;
+
     /*  create the data mapper  */
     dtMap = vtkDataSetMapper::New();
 
@@ -39,12 +43,20 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     render->AddActor(actor);
 
     /*  Picker vriables  */
-    interact   = renWin->GetInteractor();
-    initStyle  = vtkInteractorStyleTrackballCamera::New();
-    idFilter   = vtkIdFilter::New();
-    surfFilter = vtkDataSetSurfaceFilter::New();
-    pick       = Pick::New();
-    areaPicker = vtkAreaPicker::New();
+    pick             = Pick::New();
+    idFilter         = vtkIdFilter::New();
+    surfFilter       = vtkDataSetSurfaceFilter::New();
+    areaPicker       = vtkAreaPicker::New();
+    pickerInitStatus = areaPicker->GetViewProp();
+
+    /*  interactor  variables  */
+    interact  = renWin->GetInteractor();
+    initStyle = vtkInteractorStyleTrackballCamera::New();
+
+    /*  Cliper  */
+    frustum    = vtkImplicitBoolean::New();
+    extractGeo = vtkExtractGeometry::New();
+    isCliped   = false;
 
     /*  coordinates system  */
     axis    = vtkOrientationMarkerWidget::New();
@@ -109,9 +121,55 @@ Viewer::~Viewer() {
 }
 
 /*  ############################################################################
+ *  setInputData: set the input filed data that will be shown in the render
+ *      window.
+ *  @param  input: the filed varaible  */
+void Viewer::setInputData(Field*& input) {
+    /*  set the field variable that will be shown  */
+    field = input;
+    /*  copy the current unstructured data for operation  */
+    ugridCur->DeepCopy(field->ugrid);
+    /*  update the flag  */
+    isAssigedField = true;
+};
+
+/*  ############################################################################
+ *  showCompleteModel: reset the unstructured grid data to the original and
+ *      show the model as current configuration  */
+void Viewer::showCompleteModel() {
+    /*  check the status  */
+    if (isAssigedField) {
+        /*  reset the unstructured grid to original  */
+        ugridCur->DeepCopy(field->ugrid);
+
+        /*  show the field data as current configuration  */
+        switch (recorder[0]) {
+            /*   show model   */
+            case 0: {
+                showModel();
+                break;
+            }
+            /*  show mesh  */
+            case 1: {
+                showMesh();
+                break;
+            }
+            /*  show point related field  */
+            case 2: {
+                showPointField(recorder[1], recorder[2]);
+                break;
+            }
+        }
+    }
+}
+
+/*  ############################################################################
  *  showModel: display the model geometry in the viewer object
  *  @param  index: the index of the model that will be shown  */
-void Viewer::showModel(Field*& field) {
+void Viewer::showModel() {
+    /*  assign the recorder  */
+    recorder[0] = 0;
+
     /*  reset the interactor style  */
     pick->turnOff();
     interact->SetInteractorStyle(initStyle);
@@ -121,7 +179,7 @@ void Viewer::showModel(Field*& field) {
     configStatusBar(field->name, info);
 
     /*  set the data to the viewer  */
-    dtMap->SetInputConnection(field->port);
+    dtMap->SetInputData(ugridCur);
     dtMap->ScalarVisibilityOff();
 
     /*  configure the actor  */
@@ -138,7 +196,10 @@ void Viewer::showModel(Field*& field) {
 /*  ----------------------------------------------------------------------------
  *  showMesh: display the FEM model in the viewer object
  *  @param  file: the file to read the model mesh information  */
-void Viewer::showMesh(Field*& field) {
+void Viewer::showMesh() {
+    /*  assign the recorder  */
+    recorder[0] = 1;
+
     /*  turn off the picker  */
     pick->turnOff();
 
@@ -147,7 +208,7 @@ void Viewer::showMesh(Field*& field) {
     configStatusBar(field->name, info);
 
     /*  set the data to the viewer  */
-    //    dtMap->SetInputConnection(field->port);
+    dtMap->SetInputData(ugridCur);
     dtMap->ScalarVisibilityOff();
 
     /*  configure the actor  */
@@ -167,7 +228,12 @@ void Viewer::showMesh(Field*& field) {
  *  @param  field: the field that to be shown
  *  @param  idx: the index of the component in the data set
  *  @param  comp: the component index  */
-void Viewer::showPointField(Field*& field, const int& index, const int& comp) {
+void Viewer::showPointField(const int& index, const int& comp) {
+    /*  assign the recorder  */
+    recorder[0] = 2;
+    recorder[1] = index;
+    recorder[2] = comp;
+
     /*  Get the the field  */
     vtkDataArray* dtOld = field->pointData->GetArray(index);
 
@@ -356,14 +422,12 @@ void Viewer::configScalarBar() {
  *  @param  field: the field that will be shown
  *  @param  mode: node or element selection mode, if true, then node selection
  *                mode; else element selection mode  */
-void Viewer::pickupCells(Field* field, bool mode) {
+void Viewer::pickupCells(bool mode) {
     /*  Define the filter */
-    idFilter->SetInputData(field->ugrid);
-    idFilter->SetCellIdsArrayName("ALL");
-    idFilter->SetPointIdsArrayName("ALL");
+    idFilter->SetInputData(ugridCur);
     idFilter->Update();
 
-    /*  Convert the ouput of vtkIdFilter (vtkDataSet) back to vtkPolyData  */
+    /*  Convert the ouput of vtkIdFilter (vtkDataSet) back to vtkPolyData */
     surfFilter->SetInputConnection(idFilter->GetOutputPort());
     surfFilter->Update();
 
@@ -377,29 +441,76 @@ void Viewer::pickupCells(Field* field, bool mode) {
 
     /*  configure the actor  */
     actor->GetProperty()->SetColor(colors->GetColor3d("cyan").GetData());
-    actor->GetProperty()->SetEdgeVisibility(0);
-    actor->GetProperty()->SetLineWidth(2.0);
     actor->SetMapper(dtMap);
 
     /*  create the area picker  */
+    areaPicker->Delete();
+    areaPicker = vtkAreaPicker::New();
     interact->SetPicker(areaPicker);
 
     /*  create the picker  */
-    pick->setPolyData(surfFilter->GetOutput());
+    pick->setInputData(surfFilter->GetOutput());
     pick->setRenderInfo(renWin, render);
     //  determine the selection mode
     if (mode) {
-        pick->setPointSelectMode();
-    } else {
         pick->setCellSelectMode();
+    } else {
+        pick->setPointSelectMode();
     }
     //  set the picker to the interactor
     interact->SetInteractorStyle(pick);
     pick->OnLeftButtonUp();
-
-    /*  config the camera  */
-    render->ResetCamera();
 }
+
+/*  ############################################################################
+ *  hideSelectedCells: hide the cells selected by the picker  */
+void Viewer::hideSelectedCells() {
+    /*  Get the picker status  */
+    if (pick->isPickerActivated() && pick->isCellSelectionModeOn()) {
+        /*  append the cliping frustum  */
+        frustum->AddFunction(areaPicker->GetFrustum());
+        frustum->SetOperationTypeToUnion();
+
+        /*  initialize the geometry extraction object  */
+        extractGeo->ExtractInsideOff();
+        extractGeo->SetInputData(ugridCur);
+        extractGeo->SetImplicitFunction(frustum);
+        extractGeo->Update();
+
+        /*  show the extract geometry  */
+        dtMap->SetInputData(extractGeo->GetOutput());
+        pick->turnOff();
+        interact->SetInteractorStyle(initStyle);
+
+        /*  update the current ugrid  */
+        renWin->Render();
+        std::cout << "The reset cells: "
+                  << extractGeo->GetOutput()->GetNumberOfCells() << std::endl;
+        ugridCur->DeepCopy(extractGeo->GetOutput());
+    }
+}
+
+/*  showSelectedCells: show the cells selected by the picker  */
+void Viewer::showSelectedCells() {
+    /*  Get the picker status  */
+    if (pick->isPickerActivated() && pick->isCellSelectionModeOn()) {
+        /*  initialize the geometry extraction object  */
+        extractGeo->ExtractInsideOn();
+        extractGeo->SetInputData(field->ugrid);
+        extractGeo->SetImplicitFunction(areaPicker->GetFrustum());
+        extractGeo->Update();
+
+        /*  show the extract geometry  */
+        dtMap->SetInputData(extractGeo->GetOutput());
+        pick->turnOff();
+        interact->SetInteractorStyle(initStyle);
+        renWin->Render();
+
+        /*  update the current ugrid  */
+        ugridCur->DeepCopy(extractGeo->GetOutput());
+    }
+}
+
 /*  ============================================================================
  *  New: define the New function using the built-in interface of VTK  */
 vtkStandardNewMacro(Viewer::Pick);
@@ -421,7 +532,7 @@ Viewer::Pick::Pick() : vtkInteractorStyleRubberBandPick() {
 
 /*  ============================================================================
  *  setPolyData: assign the poly data to the current object  */
-void Viewer::Pick::setPolyData(vtkPolyData* pt) {
+void Viewer::Pick::setInputData(vtkPolyData* pt) {
     polyGeometry->SetInputData(pt);
 };
 
@@ -436,12 +547,17 @@ void Viewer::Pick::setRenderInfo(vtkGenericOpenGLRenderWindow*& renderWindow,
     ren->AddActor(selectActor);
     isActivated = true;
 }
+
 /*  ============================================================================
  *  OnLectButtonUp: the overrided member function to define the event when the \
  *  left mouse button is up  */
 void Viewer::Pick::OnLeftButtonUp() {
     /*  perform the forward member function  */
     vtkInteractorStyleRubberBandPick::OnLeftButtonUp();
+
+    /*  show the selection actor  */
+    isActivated = true;
+    selectActor->VisibilityOn();
 
     /*  if the selection mode is actived  */
     if (CurrentMode == 1) {
@@ -458,8 +574,18 @@ void Viewer::Pick::OnLeftButtonUp() {
 
         /*  configuration for the dataset mapper  */
         selectMap->ScalarVisibilityOff();
-        //  Point selection mode
+        //  Cell selection mode
         if (mode) {
+            //  set the dataset mapper
+            selectMap->SetInputData(polyGeometry->GetOutput());
+            std::cout << "Extracted "
+                      << polyGeometry->GetOutput()->GetNumberOfCells()
+                      << " cells." << std::endl;
+            //  configuration of the actor displaying
+            selectActor->GetProperty()->SetRepresentationToWireframe();
+        }
+        //  Point selection mode
+        else {
             //  define the point filter
             vtkVertexGlyphFilter* filter = vtkVertexGlyphFilter::New();
             filter->SetInputConnection(polyGeometry->GetOutputPort());
@@ -474,16 +600,6 @@ void Viewer::Pick::OnLeftButtonUp() {
             selectActor->GetProperty()->SetRepresentationToPoints();
             selectActor->GetProperty()->SetPointSize(5);
             selectActor->GetProperty()->SetVertexVisibility(true);
-        }
-        //  Cell selection mode
-        else {
-            //  set the dataset mapper
-            selectMap->SetInputData(polyGeometry->GetOutput());
-            std::cout << "Extracted "
-                      << polyGeometry->GetOutput()->GetNumberOfCells()
-                      << " cells." << std::endl;
-            //  configuration of the actor displaying
-            selectActor->GetProperty()->SetRepresentationToWireframe();
         }
 
         /*  configuration of the actor  */
@@ -502,7 +618,8 @@ void Viewer::Pick::OnLeftButtonUp() {
 void Viewer::Pick::turnOff() {
     if (isActivated) {
         //  remove the selection actor
-        ren->RemoveActor(selectActor);
+        selectActor->VisibilityOff();
+
         //  update the status flag
         isActivated = false;
     }
