@@ -56,6 +56,7 @@
 #include <QWidget>
 #include <ctime>
 
+#include "camera.h"
 #include "field.h"
 
 /*  ############################################################################
@@ -69,6 +70,8 @@ private:
     Field* field;                                  // filed to be shown
     int recorder[3];                               // filed varaible recorder
     bool isAssigedField;                           // field assignment flag
+
+    Camera* camera;                                // camera configuration
 
     QVTKOpenGLNativeWidget* win;                   // main window
     vtkGenericOpenGLRenderWindow* renWin;          // render window
@@ -155,6 +158,7 @@ private:
          *      selection model is actived
          *  @return  the selection mode, true for element, false for node  */
         bool isCellSelectionModeOn() { return mode; }
+
     }* pick;
 
 public:
@@ -164,6 +168,9 @@ public:
 
     /*  destructor: destroy the render object  */
     ~Viewer();
+
+    /*  configCamera: config the parameters of the camera  */
+    void configCamera() { camera->show(); }
 
     /*  setInputData: set the input filed data that will be shown in the render
      *      window.

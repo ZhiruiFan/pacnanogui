@@ -213,6 +213,10 @@ void pacnano::setupRenderWindow() {
     Field* field = new Field(file);
     renWin->setInputData(field);
 
+    /*  connect to the camera configuraiton  */
+    connect(ui->actConfigCamera, &QAction::triggered, renWin,
+            [&]() { renWin->configCamera(); });
+
     /*  connect to the node selection  */
     connect(ui->actNodeSelect, &QAction::triggered, renWin,
             [&]() { renWin->pickupCells(false); });

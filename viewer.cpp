@@ -23,6 +23,9 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     /*  assign the FEM model viewer */
     win = window;
 
+    /*  camera object  */
+    camera = new Camera(nullptr);
+
     /*  setup the render for FEM model viewer */
     renWin = vtkGenericOpenGLRenderWindow::New();
     render = vtkRenderer::New();
@@ -98,7 +101,7 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     configCameraGeneral();
 }
 
-/*  ----------------------------------------------------------------------------
+/*  ============================================================================
  *  destructor: destroy the render object  */
 Viewer::~Viewer() {
     //  color and actor
@@ -193,7 +196,7 @@ void Viewer::showModel() {
     renWin->Render();
 }
 
-/*  ----------------------------------------------------------------------------
+/*  ############################################################################
  *  showMesh: display the FEM model in the viewer object
  *  @param  file: the file to read the model mesh information  */
 void Viewer::showMesh() {

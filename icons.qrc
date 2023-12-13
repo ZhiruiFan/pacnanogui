@@ -92,5 +92,6 @@
         <file>icons/show_all.png</file>
         <file>icons/show_extract.png</file>
         <file>icons/show_reverse.png</file>
+        <file>icons/camera.png</file>
     </qresource>
 </RCC>

@@ -2672,6 +2672,7 @@ QTreeView::branch:open:has-children:has-siblings  {
     <property name="title">
      <string>Tools</string>
     </property>
+    <addaction name="actConfigCamera"/>
     <addaction name="actNodeSelect"/>
     <addaction name="actElemSelect"/>
    </widget>
@@ -3874,6 +3875,15 @@ QTreeView::branch:open:has-children:has-siblings  {
    </property>
    <property name="text">
     <string>Show all</string>
+   </property>
+  </action>
+  <action name="actConfigCamera">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/camera.png</normaloff>:/icons/camera.png</iconset>
+   </property>
+   <property name="text">
+    <string>Config camera</string>
    </property>
   </action>
  </widget>
