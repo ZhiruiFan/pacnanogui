@@ -21,26 +21,19 @@
 #include <vtkAreaPicker.h>
 #include <vtkAxesActor.h>
 #include <vtkCamera.h>
-#include <vtkCellPicker.h>
 #include <vtkDataSetMapper.h>
 #include <vtkDataSetSurfaceFilter.h>
 #include <vtkDoubleArray.h>
 #include <vtkExtractGeometry.h>
-#include <vtkExtractPolyDataGeometry.h>
 #include <vtkGenericOpenGLRenderWindow.h>
-#include <vtkGeometryFilter.h>
-#include <vtkIdFilter.h>
 #include <vtkIdTypeArray.h>
 #include <vtkImplicitBoolean.h>
 #include <vtkInteractorStyleRubberBandPick.h>
-#include <vtkInteractorStyleTrackballCamera.h>
 #include <vtkLookupTable.h>
 #include <vtkNamedColors.h>
 #include <vtkOrientationMarkerWidget.h>
 #include <vtkPlanes.h>
-#include <vtkPolyDataMapper.h>
 #include <vtkProp.h>
-#include <vtkProp3DCollection.h>
 #include <vtkProperty.h>
 #include <vtkProperty2D.h>
 #include <vtkRenderWindow.h>
@@ -93,9 +86,6 @@ private:
     vtkRenderWindowInteractor* interact;           // interactor
     vtkInteractorStyleTrackballCamera* initStyle;  // initial style
     vtkAreaPicker* areaPicker;                     // area picker
-    vtkProp* pickerInitStatus;                     // initial picker status
-    vtkIdFilter* idFilter;                         // node or cell id filter
-    vtkDataSetSurfaceFilter* surfFilter;           // surface filter
     vtkImplicitBoolean* frustum;                   // picker frustum
 
     vtkExtractGeometry* extractGeo;                // model clip handler
@@ -107,18 +97,19 @@ private:
 private:
     class Pick : public vtkInteractorStyleRubberBandPick {
     private:
-        bool mode;                                 // node or cell mode
-        bool isActivated;                          // status flag
+        bool mode;                             // node or cell mode
+        bool isActivated;                      // status flag
 
-        vtkGenericOpenGLRenderWindow* renWin;      // render window
-        vtkRenderer* ren;                          // renderer of the window
-        vtkNamedColors* colors;                    // buid-in color
+        vtkGenericOpenGLRenderWindow* renWin;  // render window
+        vtkRenderer* ren;                      // renderer of the window
+        vtkNamedColors* colors;                // buid-in color
 
-        vtkActor* selectActor;                     // actor for selection
-        vtkDataSetMapper* selectMap;               // mappler of data selection
-        vtkExtractPolyDataGeometry* polyGeometry;  // geometry
-        vtkPlanes* frustum;                        // viewerport frustum
-        vtkAreaPicker* picker;                     // picker
+        vtkActor* selectActor;                 // actor for selection
+        vtkDataSetMapper* selectMap;           // mappler of data selection
+        vtkPlanes* frustum;                    // viewerport frustum
+        vtkAreaPicker* picker;                 // picker
+
+        vtkExtractGeometry* extractGeo;        // model clip handler
 
     public:
         /*  New: create the object using the VTK style  */
@@ -127,12 +118,21 @@ private:
         /*  Constructor: create the Pick object  */
         Pick();
 
-        /*  OnLeftButtonUp: override the event for the left button up  */
+        /*  OnLeftButtonUp: override the event for the left button up, i.e.,
+         *  define the event when the picking operation is completed  */
         virtual void OnLeftButtonUp() override;
+
+        /*  OnMouseMove: override the event for the mouse movement, i.e.,
+         *  highlighten the neareast cells or nodes  */
+        virtual void OnMouseMove() override;
+
+        /*  OnRightButtonUp: override the event for the right button up, i.e.,
+         *  reset the selected components */
+        virtual void OnRightButtonUp() override;
 
         /*  setPolyData: assign the poly data to the current object
          *  @param  input: the field that will be operated  */
-        void setInputData(vtkPolyData* input);
+        void setInputData(vtkUnstructuredGrid* input);
 
         /*  setCellSelectMode: set the selection mode to cells  */
         void setCellSelectMode() { mode = true; }
@@ -143,7 +143,7 @@ private:
          *  @param  renderWindow: the window to show the model
          *  @param  renderer: the rendered object  */
         void setRenderInfo(vtkGenericOpenGLRenderWindow*& renderWindow,
-                           vtkRenderer*& renderer);
+                           vtkRenderer*& renderer, vtkAreaPicker*& picker);
 
         /*  turnOff: turn off the selection mode, i.e., remove the selection
          *      actor from the render window  */
