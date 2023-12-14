@@ -23,6 +23,7 @@ find_package(Qt6 REQUIRED COMPONENTS Sql)
 # ##############################################################################
 # VTK CONFIGURATION
 # Set the cmake folder fo VTK
+# WINDOWS PLATFORM
 if(WIN32)
     message("-- The program is complied in WINDOWS system ...")
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -32,7 +33,9 @@ if(WIN32)
         message("-- Setting enronment variables for Release mode ...")
         set(ENV{VTK_DIR} "D:/VTK/Release/lib/cmake/vtk-9.3")
     endif()
-elseif (UNIX)
+endif()
+# UNIX/LINUX PLATFORM
+if (UNIX)
     message("-- The program is complied in LINUX system ...")
     set(ENV{VTK_DIR} "/opt/vtk/9.3.0/lib64/cmake/vtk-9.3")
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -41,8 +44,17 @@ elseif (UNIX)
         message("-- Setting enronment variables for Release mode ...")
     endif()
 endif()
+# MACOS/APPLE PLATFORM
+if (APPLE)
+    message("-- The program is complied in MACOS/APPLE system ...")
+    set(ENV{VTK_DIR} "/Volumes/opt/Softwares/vtk/9.3.0/lib/cmake/vtk-9.3")
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        message("-- Setting enronment variables for Debug mode ...")
+    elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+        message("-- Setting enronment variables for Release mode ...")
+    endif()
+endif()
 find_package(VTK 9.3 REQUIRED COMPONENTS)
-include_directories("/usr/local/include/Vtk-9.3")
 
 # ##############################################################################
 # DFINE THE MAIN FUNCTION

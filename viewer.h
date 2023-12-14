@@ -48,6 +48,7 @@
 #include <QObject>
 #include <QWidget>
 #include <ctime>
+#include <sstream>
 
 #include "camera.h"
 #include "field.h"
