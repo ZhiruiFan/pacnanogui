@@ -93,5 +93,7 @@
         <file>icons/show_extract.png</file>
         <file>icons/show_reverse.png</file>
         <file>icons/camera.png</file>
+        <file>icons/selection_mesh.png</file>
+        <file>icons/selection_node.png</file>
     </qresource>
 </RCC>

@@ -2936,6 +2936,9 @@ QTreeView::branch:open:has-children:has-siblings  {
    <addaction name="actShowGeom"/>
    <addaction name="actShowMesh"/>
    <addaction name="separator"/>
+   <addaction name="actNodeSelect"/>
+   <addaction name="actElemSelect"/>
+   <addaction name="separator"/>
    <addaction name="actHideSelect"/>
    <addaction name="actHideReverse"/>
    <addaction name="actShowAll"/>
@@ -3778,11 +3781,19 @@ QTreeView::branch:open:has-children:has-siblings  {
    </property>
   </action>
   <action name="actNodeSelect">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/selection_node.png</normaloff>:/icons/selection_node.png</iconset>
+   </property>
    <property name="text">
     <string>Node selection</string>
    </property>
   </action>
   <action name="actElemSelect">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/selection_mesh.png</normaloff>:/icons/selection_mesh.png</iconset>
+   </property>
    <property name="text">
     <string>Element selection</string>
    </property>
