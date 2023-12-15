@@ -18,7 +18,6 @@
 
 #include <QVTKOpenGLNativeWidget.h>
 #include <vtkActor.h>
-#include <vtkAreaPicker.h>
 #include <vtkAxesActor.h>
 #include <vtkCamera.h>
 #include <vtkDataSetMapper.h>
@@ -26,9 +25,8 @@
 #include <vtkDoubleArray.h>
 #include <vtkExtractGeometry.h>
 #include <vtkGenericOpenGLRenderWindow.h>
-#include <vtkIdTypeArray.h>
 #include <vtkImplicitBoolean.h>
-#include <vtkInteractorStyleRubberBandPick.h>
+#include <vtkInteractorStyleTrackballCamera.h>
 #include <vtkLookupTable.h>
 #include <vtkNamedColors.h>
 #include <vtkOrientationMarkerWidget.h>
@@ -42,7 +40,6 @@
 #include <vtkScalarBarActor.h>
 #include <vtkTextActor.h>
 #include <vtkTextProperty.h>
-#include <vtkVertexGlyphFilter.h>
 
 #include <QList>
 #include <QObject>
@@ -52,6 +49,7 @@
 
 #include "camera.h"
 #include "field.h"
+#include "pick.h"
 
 /*  ############################################################################
  *  class Viewer: the class to define the visualization interface, which
@@ -83,10 +81,10 @@ private:
     vtkTextActor* status;                          // status bar
     std::stringstream time;                        // current time
 
+    Pick* pick;                                    // pick object
     vtkUnstructuredGrid* ugridCur;                 // current ugrid
     vtkRenderWindowInteractor* interact;           // interactor
     vtkInteractorStyleTrackballCamera* initStyle;  // initial style
-    vtkAreaPicker* areaPicker;                     // area picker
     vtkImplicitBoolean* frustum;                   // picker frustum
 
     vtkExtractGeometry* extractGeo;                // model clip handler
@@ -94,73 +92,6 @@ private:
 
     /*  data information  */
     QMap<int, char> compName = {{0, 'X'}, {1, 'Y'}, {2, 'Z'}};
-
-private:
-    class Pick : public vtkInteractorStyleRubberBandPick {
-    private:
-        bool mode;                             // node or cell mode
-        bool isActivated;                      // status flag
-
-        vtkGenericOpenGLRenderWindow* renWin;  // render window
-        vtkRenderer* ren;                      // renderer of the window
-        vtkNamedColors* colors;                // buid-in color
-
-        vtkActor* selectActor;                 // actor for selection
-        vtkDataSetMapper* selectMap;           // mappler of data selection
-        vtkPlanes* frustum;                    // viewerport frustum
-        vtkAreaPicker* picker;                 // picker
-
-        vtkExtractGeometry* extractGeo;        // model clip handler
-
-    public:
-        /*  New: create the object using the VTK style  */
-        static Pick* New();
-        vtkTypeMacro(Pick, vtkInteractorStyleRubberBandPick);
-        /*  Constructor: create the Pick object  */
-        Pick();
-
-        /*  OnLeftButtonUp: override the event for the left button up, i.e.,
-         *  define the event when the picking operation is completed  */
-        virtual void OnLeftButtonUp() override;
-
-        /*  OnMouseMove: override the event for the mouse movement, i.e.,
-         *  highlighten the neareast cells or nodes  */
-        virtual void OnMouseMove() override;
-
-        /*  OnRightButtonUp: override the event for the right button up, i.e.,
-         *  reset the selected components */
-        virtual void OnRightButtonUp() override;
-
-        /*  setPolyData: assign the poly data to the current object
-         *  @param  input: the field that will be operated  */
-        void setInputData(vtkUnstructuredGrid* input);
-
-        /*  setCellSelectMode: set the selection mode to cells  */
-        void setCellSelectMode() { mode = true; }
-        /*  setPointSelectMode: set the selection model to points  */
-        void setPointSelectMode() { mode = false; }
-
-        /*  setRenderInfo: set the render window and renderer
-         *  @param  renderWindow: the window to show the model
-         *  @param  renderer: the rendered object  */
-        void setRenderInfo(vtkGenericOpenGLRenderWindow*& renderWindow,
-                           vtkRenderer*& renderer, vtkAreaPicker*& picker);
-
-        /*  turnOff: turn off the selection mode, i.e., remove the selection
-         *      actor from the render window  */
-        void turnOff();
-
-        /*  isPickerActivated: return the status of the picker where whether the
-         *      actor is activated.
-         *   @return  if the actor is actived  */
-        bool isPickerActivated() { return isActivated; }
-
-        /*  isCellModeOn: get the status of the picker that if the cell
-         *      selection model is actived
-         *  @return  the selection mode, true for element, false for node  */
-        bool isCellSelectionModeOn() { return mode; }
-
-    }* pick;
 
 public:
     /*  constructor: create the render window to show the FEM model

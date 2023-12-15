@@ -46,8 +46,7 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     render->AddActor(actor);
 
     /*  Picker vriables  */
-    pick       = Pick::New();
-    areaPicker = vtkAreaPicker::New();
+    pick = Pick::New();
 
     /*  interactor  variables  */
     interact  = renWin->GetInteractor();
@@ -435,14 +434,9 @@ void Viewer::pickupCells(bool mode) {
     actor->GetProperty()->SetColor(colors->GetColor3d("cyan").GetData());
     actor->SetMapper(dtMap);
 
-    /*  create the area picker  */
-    areaPicker->Delete();
-    areaPicker = vtkAreaPicker::New();
-    interact->SetPicker(areaPicker);
-
     /*  create the picker  */
-    pick->setInputData(ugridCur);
-    pick->setRenderInfo(renWin, render, areaPicker);
+    pick->setInputData(field);
+    pick->setRenderInfo(render);
     //  determine the selection mode
     if (mode) {
         pick->setCellSelectMode();
@@ -460,7 +454,7 @@ void Viewer::hideSelectedCells() {
     /*  Get the picker status  */
     if (pick->isPickerActivated() && pick->isCellSelectionModeOn()) {
         /*  append the cliping frustum  */
-        frustum->AddFunction(areaPicker->GetFrustum());
+        frustum->AddFunction(pick->getFrustum());
         frustum->SetOperationTypeToUnion();
 
         /*  initialize the geometry extraction object  */
@@ -490,7 +484,7 @@ void Viewer::showSelectedCells() {
         /*  initialize the geometry extraction object  */
         extractGeo->ExtractInsideOn();
         extractGeo->SetInputData(field->ugrid);
-        extractGeo->SetImplicitFunction(areaPicker->GetFrustum());
+        extractGeo->SetImplicitFunction(pick->getFrustum());
         extractGeo->Update();
 
         /*  show the extract geometry  */
@@ -501,142 +495,5 @@ void Viewer::showSelectedCells() {
 
         /*  update the current ugrid  */
         ugridCur->DeepCopy(extractGeo->GetOutput());
-    }
-}
-
-/* #############################################################################
- *  New: define the New function using the built-in interface of VTK  */
-vtkStandardNewMacro(Viewer::Pick);
-
-/*  ============================================================================
- *  Constructor: create the Pick object  */
-Viewer::Pick::Pick() : vtkInteractorStyleRubberBandPick() {
-    /*  create the variables  */
-    extractGeo  = vtkExtractGeometry::New();
-    selectMap   = vtkDataSetMapper::New();
-    selectActor = vtkActor::New();
-    selectActor->SetMapper(selectMap);
-
-    /*  activate the selection mode  */
-    CurrentMode = 1;
-    /*  turn off the picking operation  */
-    isActivated = false;
-};
-
-/*  ============================================================================
- *  setPolyData: assign the poly data to the current object
- *  @param  input: the field that will be operated  */
-void Viewer::Pick::setInputData(vtkUnstructuredGrid* input) {
-    extractGeo->SetInputData(input);
-}
-
-/*  ============================================================================
- *  setRenderInfo: set the render window and renderer */
-void Viewer::Pick::setRenderInfo(vtkGenericOpenGLRenderWindow*& renderWindow,
-                                 vtkRenderer*& renderer,
-                                 vtkAreaPicker*& areaPicker) {
-    /*  assign renderer information  */
-    renWin = renderWindow;
-    ren    = renderer;
-    picker = areaPicker;
-    /*  add actor  */
-    ren->AddActor(selectActor);
-    isActivated = true;
-}
-
-/*  ############################################################################
- *  OnLectButtonUp: the overrided member function to define the event when the
- *  left mouse button is up  */
-void Viewer::Pick::OnLeftButtonUp() {
-    /*  perform the forward member function  */
-    vtkInteractorStyleRubberBandPick::OnLeftButtonUp();
-
-    /*  show the selection actor  */
-    isActivated = true;
-    selectActor->VisibilityOn();
-
-    /*  if the selection mode is actived  */
-    if (CurrentMode == 1) {
-        /*  using the system defined configuration  */
-        vtkNew<vtkNamedColors> colors;
-
-        /*  get the selected unstructured grids  */
-        //        picker = vtkAreaPicker::New();
-        //        GetInteractor()->SetPicker(picker);
-        //        picker->SetRenderer(ren);
-        //        picker  =
-        //        static_cast<vtkAreaPicker*>(GetInteractor()->GetPicker());
-        frustum = picker->GetFrustum();
-        extractGeo->SetImplicitFunction(frustum);
-        extractGeo->Update();
-
-        /*  configuration for the dataset mapper  */
-        selectMap->ScalarVisibilityOff();
-        //  Cell selection mode
-        if (mode) {
-            //  set the dataset mapper
-            //            selectMap->SetInputData(extractGeo->GetOutput());
-            selectMap->SetInputData(extractGeo->GetOutput());
-            std::cout << "Extracted "
-                      << extractGeo->GetOutput()->GetNumberOfCells()
-                      << " cells." << std::endl;
-            //  configuration of the actor displaying
-            selectActor->GetProperty()->SetRepresentationToWireframe();
-        }
-        //  Point selection mode
-        else {
-            //  define the point filter
-            vtkVertexGlyphFilter* filter = vtkVertexGlyphFilter::New();
-            filter->SetInputData(extractGeo->GetOutput());
-            filter->Update();
-            //  set the dataset mapper
-            selectMap->SetInputData(filter->GetOutput());
-            //  display the number of selected object
-            std::cout << "Extracted "
-                      << extractGeo->GetOutput()->GetNumberOfPoints()
-                      << " Points." << std::endl;
-            //  configuration for the actor displaying
-            selectActor->GetProperty()->SetRepresentationToPoints();
-            selectActor->GetProperty()->SetPointSize(5);
-            selectActor->GetProperty()->SetVertexVisibility(true);
-        }
-
-        /*  configuration of the actor  */
-        selectActor->GetProperty()->SetColor(
-            colors->GetColor3d("Tomato").GetData());
-
-        /*  render the window  */
-        renWin->Render();
-        HighlightProp(NULL);
-    }
-}
-
-/*  ############################################################################
- *  OnRightButtonUp: override the event for the right button up, i.e.,
- *  reset the selected components */
-void Viewer::Pick::OnRightButtonUp() {
-    vtkInteractorStyleRubberBandPick::OnRightButtonUp();
-}
-
-/*  ############################################################################
- *  OnRightButtonUp: override the event for the right button up, i.e.,
- *  reset the selected components */
-void Viewer::Pick::OnMouseMove() {
-    /*  execute the defalut event on the */
-    vtkInteractorStyleRubberBandPick::OnMouseMove();
-
-    /*  */
-}
-
-/*  ===========================================================================
- *  turnOff: turn off the selection mode, i.e., remove the selection
- *           actor from the render window  */
-void Viewer::Pick::turnOff() {
-    if (isActivated) {
-        //  remove the selection actor
-        selectActor->VisibilityOff();
-
-        //  update the status flag
-        isActivated = false;
     }
 }
