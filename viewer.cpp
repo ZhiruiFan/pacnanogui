@@ -53,9 +53,14 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     initStyle = vtkInteractorStyleTrackballCamera::New();
 
     /*  Cliper  */
-    frustum    = vtkImplicitBoolean::New();
-    extractGeo = vtkExtractGeometry::New();
-    isCliped   = false;
+    frustum      = vtkImplicitBoolean::New();
+    extractGeo   = vtkExtractGeometry::New();
+    isCliped     = false;
+    idsSelector  = vtkSelectionNode::New();
+    cellSelector = vtkSelection::New();
+    extractor    = vtkExtractSelection::New();
+    idsSelector->SetFieldType(vtkSelectionNode::CELL);
+    idsSelector->SetContentType(vtkSelectionNode::INDICES);
 
     /*  coordinates system  */
     axis    = vtkOrientationMarkerWidget::New();
@@ -435,6 +440,7 @@ void Viewer::pickupCells(bool mode) {
     actor->SetMapper(dtMap);
 
     /*  create the picker  */
+    pick->setInputData(ugridCur);
     pick->setInputData(field);
     pick->setRenderInfo(render);
     //  determine the selection mode

@@ -19,13 +19,17 @@
 #include <vtkActor.h>
 #include <vtkAppendFilter.h>
 #include <vtkAreaPicker.h>
+#include <vtkCellLocator.h>
 #include <vtkCellPicker.h>
 #include <vtkDataSetMapper.h>
 #include <vtkExtractGeometry.h>
 #include <vtkExtractSelection.h>
+#include <vtkIdFilter.h>
 #include <vtkImplicitBoolean.h>
+#include <vtkInformation.h>
 #include <vtkInteractorStyleRubberBandPick.h>
 #include <vtkNamedColors.h>
+#include <vtkPlaneCollection.h>
 #include <vtkPlanes.h>
 #include <vtkProperty.h>
 #include <vtkRenderWindow.h>
@@ -53,6 +57,7 @@ private:
 
     vtkActor* selectActor;              // actor for selection
     vtkDataSetMapper* selectMap;        // mappler of data selection
+    vtkPlanes* planes;
     vtkImplicitBoolean* frustum;        // viewerport frustum
     vtkAreaPicker* areaPicker;          // area picker
     vtkCellPicker* cellPicker;          // cell picker
@@ -63,17 +68,7 @@ private:
 
     vtkVertexGlyphFilter* nodeFilter;   // nodal filter
     Field* field;                       // current operated data
-
-    vtkIdType cellId;                   // Id for the picked cell
-    vtkIdTypeArray* cellIds;            // array to store the cllicked cell
-    vtkSelectionNode* clickPoint;       // mouse selection point
-    vtkSelection* clickCell;            // selected cell by clicking
-    vtkExtractSelection* singleSelect;  // single selection handler
-    vtkCell* pickedCell;
-    unsigned int numCells;              // number of picked cells
-    vtkUnstructuredGrid* ugridClick;    // clicked ugrid
-    vtkUnstructuredGrid* ugridRegion;   // the all ugrid
-    vtkAppendFilter* appendFilter;      // append the ugrid
+    vtkIdFilter* idFilter;
 
 public:
     /*  New: create the object using the VTK style  */
@@ -96,7 +91,8 @@ public:
 
     /*  setPolyData: assign the poly data to the current object
      *  @param  input: the field that will be operated  */
-    void setInputData(Field* input);
+    void setInputData(vtkUnstructuredGrid* input);
+    void setInputData(Field* input) { field = input; }
 
     /*  setCellSelectMode: set the selection mode to cells  */
     void setCellSelectMode() { mode = true; }
@@ -123,7 +119,7 @@ public:
     bool isCellSelectionModeOn() { return mode; }
 
     /*  getFrustum: get the frustum or vtk planes of the area picker  */
-    vtkPlanes* getFrustum() { return areaPicker->GetFrustum(); }
+    vtkImplicitBoolean* getFrustum() { return frustum; }
 
 private:
     /*  onCellRegionSelection: preform the region selection when the piking

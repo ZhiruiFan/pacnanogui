@@ -25,14 +25,9 @@ Pick::Pick() : vtkInteractorStyleRubberBandPick() {
     /*  Colors object  */
     colors = vtkNamedColors::New();
 
-    /*  the all of unstructured grid  */
-    ugridClick   = vtkUnstructuredGrid::New();
-    appendFilter = vtkAppendFilter::New();
-
     /*  create the variables  */
     regionSelect = vtkExtractSelection::New();
     regionFilter = vtkAppendFilter::New();
-    ugridRegion  = vtkUnstructuredGrid::New();
     extractGeo   = vtkExtractGeometry::New();
     selectMap    = vtkDataSetMapper::New();
     selectActor  = vtkActor::New();
@@ -40,6 +35,7 @@ Pick::Pick() : vtkInteractorStyleRubberBandPick() {
     selectActor->GetProperty()->SetColor(
         colors->GetColor3d("Tomato").GetData());
     frustum = vtkImplicitBoolean::New();
+    planes  = vtkPlanes::New();
 
     /*  picker  */
     areaPicker = vtkAreaPicker::New();
@@ -48,26 +44,20 @@ Pick::Pick() : vtkInteractorStyleRubberBandPick() {
     /*  cell picker  */
     cellPicker = vtkCellPicker::New();
     cellPicker->SetTolerance(0.001);
-    clickPoint = vtkSelectionNode::New();
-    clickPoint->SetFieldType(vtkSelectionNode::CELL);
-    clickPoint->SetContentType(vtkSelectionNode::INDICES);
-    clickCell    = vtkSelection::New();
-    cellIds      = vtkIdTypeArray::New();
-    singleSelect = vtkExtractSelection::New();
 
     /*  activate the selection mode  */
     CurrentMode = 1;
     /*  turn off the picking operation  */
     isActivated = false;
+
+    idFilter = vtkIdFilter::New();
 };
 
 /*  ============================================================================
  *  setPolyData: assign the poly data to the current object
  *  @param  input: the field that will be operated  */
-void Pick::setInputData(Field* input) {
-    field = input;
-    extractGeo->SetInputData(input->ugrid);
-    numCells = 0;
+void Pick::setInputData(vtkUnstructuredGrid* input) {
+    extractGeo->SetInputData(input);
 }
 
 /*  ============================================================================
@@ -75,11 +65,19 @@ void Pick::setInputData(Field* input) {
 void Pick::setRenderInfo(vtkRenderer* renderer) {
     /*  assign renderer information  */
     ren = renderer;
-    //    areaPicker = picker;
-    /*  add actor  */
+
+    /*  assign the picker information  */
     areaPicker->Delete();
     areaPicker = vtkAreaPicker::New();
     ren->GetRenderWindow()->GetInteractor()->SetPicker(areaPicker);
+
+    /*  reset the */
+
+    /*  reset the frustum information  */
+    frustum->Delete();
+    frustum = vtkImplicitBoolean::New();
+
+    /*  add the actor to the render  */
     ren->AddActor(selectActor);
     isActivated = true;
 }
@@ -101,31 +99,8 @@ void Pick::OnLeftButtonUp() {
         selectMap->ScalarVisibilityOff();
         //  Cell selection mode
         if (mode) {
-            /*  determine the mode is region selection or point selection  */
-            if (StartPosition[0] == EndPosition[0]) {
-                //  perform the single selection
-                onCellSingleSelection();
-                appendFilter->AddInputData(ugridClick);
-            } else {
-                //  perform the region selection
-                onCellRegionSelection();
-                appendFilter->AddInputData(ugridRegion);
-            }
-            /*  add the selected cells to the ugrid  */
-            //            appendFilter->AddInputData(extractGeo->GetOutput());
-            appendFilter->Update();
-
-            /*  set the selected ugrid to the actor  */
-            selectMap->SetInputData(appendFilter->GetOutput());
-            selectActor->SetMapper(selectMap);
-
-            /*  configure the renderer property  */
-            selectActor->GetProperty()->SetColor(
-                colors->GetColor3d("Tomato").GetData());
-            selectActor->GetProperty()->SetRepresentationToWireframe();
-
-            /*  assign the actor to the renderer  */
-            ren->AddActor(selectActor);
+            //            onCellRegionSelection();
+            onCellSingleSelection();
         }
         //  Point selection mode
         else {
@@ -146,41 +121,41 @@ void Pick::OnLeftButtonUp() {
 void Pick::OnRightButtonUp() {
     vtkInteractorStyleRubberBandPick::OnRightButtonUp();
 
-    /*  get the current posion of the mouse curser  */
-    cellPicker->Pick(this->Interactor->GetEventPosition()[0],
-                     this->Interactor->GetEventPosition()[1], 0, ren);
+    //    /*  get the current posion of the mouse curser  */
+    //    cellPicker->Pick(this->Interactor->GetEventPosition()[0],
+    //                     this->Interactor->GetEventPosition()[1], 0, ren);
 
-    /*  get the closest cell near the curser  */
-    vtkIdType cellId = cellPicker->GetCellId();
-    std::cout << "Cell ID: " << cellPicker->GetCellId() << std::endl;
+    //    /*  get the closest cell near the curser  */
+    //    vtkIdType cellId = cellPicker->GetCellId();
+    //    std::cout << "Cell ID: " << cellPicker->GetCellId() << std::endl;
 
-    if (cellId >= 0) {
-        cellIds->InsertNextValue(cellId);
+    //    if (cellId >= 0) {
+    //        cellIds->InsertNextValue(cellId);
 
-        clickPoint->SetSelectionList(cellIds);
+    //        clickPoint->SetSelectionList(cellIds);
 
-        clickCell->AddNode(clickPoint);
+    //        clickCell->AddNode(clickPoint);
 
-        singleSelect->SetInputData(1, clickCell);
-        singleSelect->Update();
+    //        singleSelect->SetInputData(1, clickCell);
+    //        singleSelect->Update();
 
-        vtkNew<vtkUnstructuredGrid> selected;
-        selected->ShallowCopy(singleSelect->GetOutput());
+    //        vtkNew<vtkUnstructuredGrid> selected;
+    //        selected->ShallowCopy(singleSelect->GetOutput());
 
-        vtkNew<vtkDataSetMapper> selectedMapper;
-        selectedMapper->SetInputData(selected);
+    //        vtkNew<vtkDataSetMapper> selectedMapper;
+    //        selectedMapper->SetInputData(selected);
 
-        vtkNew<vtkActor> selectedActor;
-        vtkNew<vtkNamedColors> colors;
-        selectActor->SetMapper(selectedMapper);
-        selectActor->GetProperty()->SetColor(
-            colors->GetColor3d("Tomato").GetData());
-        selectActor->GetProperty()->SetRepresentationToWireframe();
+    //        vtkNew<vtkActor> selectedActor;
+    //        vtkNew<vtkNamedColors> colors;
+    //        selectActor->SetMapper(selectedMapper);
+    //        selectActor->GetProperty()->SetColor(
+    //            colors->GetColor3d("Tomato").GetData());
+    //        selectActor->GetProperty()->SetRepresentationToWireframe();
 
-        ren->AddActor(selectedActor);
-        ren->GetRenderWindow()->Render();
-        HighlightProp(NULL);
-    }
+    //        ren->AddActor(selectedActor);
+    //        ren->GetRenderWindow()->Render();
+    //        HighlightProp(NULL);
+    //    }
 }
 
 /*  ############################################################################
@@ -195,44 +170,85 @@ void Pick::OnMouseMove() {
  *  onCellRegionSelection: preform the region selection when the piking
  *  mode is actived.  */
 void Pick::onCellRegionSelection() {
-    /*  get the selected unstructured grids  */
-    frustum->AddFunction(areaPicker->GetFrustum());
+    /* extract the new vtkPlanes   */
+    vtkPlanes* newPlanes = vtkPlanes::New();
+    newPlanes->SetNormals(areaPicker->GetFrustum()->GetNormals());
+    newPlanes->SetPoints(areaPicker->GetFrustum()->GetPoints());
+
+    /*  add the new plane to the implicit boolean  */
+    frustum->AddFunction(newPlanes);
     frustum->SetOperationTypeToUnion();
+
+    /*  extract the geometry by using union planes  */
+    extractGeo->ExtractInsideOn();
     extractGeo->SetImplicitFunction(frustum);
     extractGeo->Update();
+    std::cout << extractGeo->GetOutput()->GetNumberOfCells() << std::endl;
+    /*  set the selected ugrid to the actor  */
+    selectMap->SetInputData(extractGeo->GetOutput());
+    selectActor->SetMapper(selectMap);
 
-    //  set the dataset mapper
-    std::cout << "Extracted " << extractGeo->GetOutput()->GetNumberOfCells()
-              << " cells." << std::endl;
-    //  configuration of the actor displaying
-    ugridRegion = extractGeo->GetOutput();
+    /*  configure the renderer property  */
+    selectActor->GetProperty()->SetColor(
+        colors->GetColor3d("Tomato").GetData());
+    selectActor->GetProperty()->SetRepresentationToWireframe();
+    selectActor->GetProperty()->SetLineWidth(4.0);
+
+    /*  assign the actor to the renderer  */
+    ren->AddActor(selectActor);
 }
-
-/*  ============================================================================
- *  onCellSingleSelection: preform the single selection when the piking
+/*  onCellSingleSelection: preform the single selection when the piking
  *  mode is actived.  */
 void Pick::onCellSingleSelection() {
-    /*  get the current posion of the mouse curser  */
-    cellPicker->Pick(this->Interactor->GetEventPosition()[0],
-                     this->Interactor->GetEventPosition()[1], 0, ren);
+    idFilter->SetInputData(field->ugrid);
+    idFilter->SetCellIdsArrayName("All");
+    idFilter->SetPointIdsArrayName("All");
+    idFilter->Update();
+    //    extractGeo->SetInputConnection(idFilter->GetOutputPort());
+    extractGeo->SetInputData(field->ugrid);
+    extractGeo->ExtractInsideOn();
+    extractGeo->SetImplicitFunction(areaPicker->GetFrustum());
+    extractGeo->Update();
+    std::cout << extractGeo->GetOutput()->GetNumberOfCells() << std::endl;
+    vtkIdTypeArray* ids = vtkIdTypeArray::New();
+    ids->DeepCopy(vtkIntArray::SafeDownCast(
+        idFilter->GetOutput()->GetCellData()->GetArray("All")));
+    std::cout << idFilter->GetOutput()->GetNumberOfCells() << std::endl;
 
-    /*  get the closest cell near the curser  */
-    cellId = cellPicker->GetCellId();
-    std::cout << "Cell ID: " << cellPicker->GetCellId() << std::endl;
+    vtkNew<vtkSelectionNode> selectionNode;
+    selectionNode->SetFieldType(vtkSelectionNode::CELL);
+    selectionNode->SetContentType(vtkSelectionNode::INDICES);
+    selectionNode->SetSelectionList(ids);
 
-    /*  add the selected cell to the actor  */
-    if (cellId >= 0) {
-        /*  get the vtkCell from the cell id  */
-        cellIds->InsertNextValue(cellId);
-        clickPoint->SetSelectionList(cellIds);
-        clickCell->AddNode(clickPoint);
+    vtkNew<vtkSelection> selection;
+    selection->AddNode(selectionNode);
 
-        /*  assign the selected cells to the grid variables */
-        singleSelect->SetInputConnection(0, field->port);
-        singleSelect->SetInputData(1, clickCell);
-        singleSelect->Update();
-        ugridClick->ShallowCopy(singleSelect->GetOutput());
+    vtkNew<vtkExtractSelection> extractSelection;
+    extractSelection->SetInputConnection(0, idFilter->GetOutputPort(0));
+    extractSelection->SetInputData(1, selection);
+    extractSelection->Update();
+
+    // In selection.
+    vtkNew<vtkUnstructuredGrid> selected;
+    ids = extractGeo->GetOutput()->GetCellLocationsArray();
+    selected->ShallowCopy(extractSelection->GetOutput());
+    std::cout << "==================\n";
+    for (int i = 0; i < extractGeo->GetOutput()->GetNumberOfCells(); ++i) {
+        std::cout << ids->GetValue(i) << std::endl;
+        extractGeo->GetOutput();
     }
+
+    selectMap->SetInputData(extractGeo->GetOutput());
+    selectActor->SetMapper(selectMap);
+
+    /*  configure the renderer property  */
+    selectActor->GetProperty()->SetColor(
+        colors->GetColor3d("Tomato").GetData());
+    selectActor->GetProperty()->SetRepresentationToWireframe();
+    selectActor->GetProperty()->SetLineWidth(4.0);
+
+    /*  assign the actor to the renderer  */
+    ren->AddActor(selectActor);
 }
 
 /*  ============================================================================

@@ -24,6 +24,7 @@
 #include <vtkDataSetSurfaceFilter.h>
 #include <vtkDoubleArray.h>
 #include <vtkExtractGeometry.h>
+#include <vtkExtractSelection.h>
 #include <vtkGenericOpenGLRenderWindow.h>
 #include <vtkImplicitBoolean.h>
 #include <vtkInteractorStyleTrackballCamera.h>
@@ -38,6 +39,8 @@
 #include <vtkRenderWindowInteractor.h>
 #include <vtkRenderer.h>
 #include <vtkScalarBarActor.h>
+#include <vtkSelection.h>
+#include <vtkSelectionNode.h>
 #include <vtkTextActor.h>
 #include <vtkTextProperty.h>
 
@@ -89,6 +92,10 @@ private:
 
     vtkExtractGeometry* extractGeo;                // model clip handler
     bool isCliped;                                 // clip flag
+
+    vtkSelectionNode* idsSelector;                 // selection node
+    vtkSelection* cellSelector;                    // cell selection
+    vtkExtractSelection* extractor;                // extract operator
 
     /*  data information  */
     QMap<int, char> compName = {{0, 'X'}, {1, 'Y'}, {2, 'Z'}};
