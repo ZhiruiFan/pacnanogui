@@ -440,7 +440,6 @@ void Viewer::pickupCells(bool mode) {
     actor->SetMapper(dtMap);
 
     /*  create the picker  */
-    pick->setInputData(ugridCur);
     pick->setInputData(field);
     pick->setRenderInfo(render);
     //  determine the selection mode

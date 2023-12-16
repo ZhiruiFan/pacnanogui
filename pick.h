@@ -31,6 +31,7 @@
 #include <vtkNamedColors.h>
 #include <vtkPlaneCollection.h>
 #include <vtkPlanes.h>
+#include <vtkPoints.h>
 #include <vtkProperty.h>
 #include <vtkRenderWindow.h>
 #include <vtkRenderWindowInteractor.h>
@@ -49,26 +50,33 @@
  *      cliking/single selection is defined.  */
 class Pick : public vtkInteractorStyleRubberBandPick {
 private:
-    bool mode;                          // node or cell mode
-    bool isActivated;                   // status flag
+    bool mode;                           // node or cell mode
+    bool isActivated;                    // status flag
 
-    vtkRenderer* ren;                   // renderer of the window
-    vtkNamedColors* colors;             // buid-in color
+    vtkRenderer* ren;                    // renderer of the window
+    vtkNamedColors* colors;              // buid-in color
 
-    vtkActor* selectActor;              // actor for selection
-    vtkDataSetMapper* selectMap;        // mappler of data selection
+    vtkActor* selectActor;               // actor for selection
+    vtkDataSetMapper* selectMap;         // mappler of data selection
     vtkPlanes* planes;
-    vtkImplicitBoolean* frustum;        // viewerport frustum
-    vtkAreaPicker* areaPicker;          // area picker
-    vtkCellPicker* cellPicker;          // cell picker
+    vtkImplicitBoolean* frustum;         // viewerport frustum
 
-    vtkExtractSelection* regionSelect;  // region selection handler
-    vtkExtractGeometry* extractGeo;     // model clip handler
-    vtkAppendFilter* regionFilter;      // append the region selection
+    vtkAppendFilter* regionFilter;       // append the region selection
 
-    vtkVertexGlyphFilter* nodeFilter;   // nodal filter
-    Field* field;                       // current operated data
-    vtkIdFilter* idFilter;
+    vtkVertexGlyphFilter* nodeFilter;    // nodal filter
+    Field* field;                        // current operated data
+
+    vtkCellPicker* cellPicker;           // cell picker
+    vtkAreaPicker* areaPicker;           // area picker
+    vtkIdFilter* idFilter;               // id filters
+    vtkExtractGeometry* extractGeo;      // model clip handler
+    vtkSelectionNode* nodeSelector;      // node selector
+    vtkSelection* cellSelector;          // cell selector
+    vtkExtractSelection* extractor;      // cell extractor
+    vtkCellLocator* locator;             // cell locator
+    vtkIdTypeArray* cellIds;             // extracted cells
+    vtkUnstructuredGrid* cellExtracted;  // the extracted cells
+    vtkIdType numCellExtracted;          // number of extracted cells
 
 public:
     /*  New: create the object using the VTK style  */
@@ -92,7 +100,7 @@ public:
     /*  setPolyData: assign the poly data to the current object
      *  @param  input: the field that will be operated  */
     void setInputData(vtkUnstructuredGrid* input);
-    void setInputData(Field* input) { field = input; }
+    void setInputData(Field* input);
 
     /*  setCellSelectMode: set the selection mode to cells  */
     void setCellSelectMode() { mode = true; }
@@ -129,6 +137,9 @@ private:
     /*  onCellSingleSelection: preform the single selection when the piking
      *  mode is actived.  */
     void onCellSingleSelection();
+
+    /*  showSelectedCells: display the selected cells to the render window  */
+    void showSelectedCells();
 
     /*  onPointRegionSelection: preform the region point selection when the
      *  picking mode is actived.  */
