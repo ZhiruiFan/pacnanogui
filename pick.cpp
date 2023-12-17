@@ -48,7 +48,6 @@ Pick::Pick() : vtkInteractorStyleRubberBandPick() {
     idFilter      = vtkIdFilter::New();
     locator       = vtkCellLocator::New();
     //  configurations
-    numCellExtracted = 0;
     cellPicker->SetTolerance(0.001);
     nodeSelector->SetFieldType(vtkSelectionNode::CELL);
     nodeSelector->SetContentType(vtkSelectionNode::INDICES);
@@ -61,9 +60,9 @@ Pick::Pick() : vtkInteractorStyleRubberBandPick() {
 };
 
 /*  ############################################################################
- *  setInputData: assign the poly data to the current object
+ *  setField: assign the poly data to the current object
  *  @param  input: the field that will be operated  */
-void Pick::setInputData(Field* input) {
+void Pick::setField(Field* input) {
     /*  assign the filed variables  */
     field = input;
 
@@ -77,11 +76,19 @@ void Pick::setInputData(Field* input) {
     locator->SetDataSet(idFilter->GetOutput());
     locator->BuildLocator();
 
-    /*  set the input of the geometry extractor  */
-    extractGeo->SetInputData(idFilter->GetOutput());
-
     /*  set the input of the cell extractor  */
     extractor->SetInputConnection(0, idFilter->GetOutputPort());
+}
+
+/*  setPolyData: assign the poly data to the current object
+ *  @param  input: the unstructured grid be operated  */
+void Pick::setInputData(vtkUnstructuredGrid* input) {
+    /*  set the input of the geometry extractor  */
+    extractGeo->SetInputData(input);
+
+    /* reset the id array of selected cells  */
+    cellIds->Initialize();
+    cellExtracted->Initialize();
 }
 
 /*  ============================================================================
@@ -94,8 +101,6 @@ void Pick::setRenderInfo(vtkRenderer* renderer) {
     areaPicker->Delete();
     areaPicker = vtkAreaPicker::New();
     ren->GetRenderWindow()->GetInteractor()->SetPicker(areaPicker);
-
-    /*  reset the */
 
     /*  reset the frustum information  */
     frustum->Delete();
@@ -115,7 +120,6 @@ void Pick::OnLeftButtonUp() {
 
     /*  show the selection actor  */
     isActivated = true;
-    selectActor->VisibilityOn();
 
     /*  if the selection mode is actived  */
     if (CurrentMode == 1) {
@@ -137,8 +141,8 @@ void Pick::OnLeftButtonUp() {
             onPointRegionSelection();
         }
 
+        selectActor->VisibilityOn();
         /*  configuration of the actor  */
-
         /*  render the window  */
     }
 }
@@ -198,36 +202,7 @@ void Pick::OnMouseMove() {
  *  onCellRegionSelection: preform the region selection when the piking
  *  mode is actived.  */
 void Pick::onCellRegionSelection() {
-    // /* extract the new vtkPlanes   */
-    // vtkPlanes* newPlanes = vtkPlanes::New();
-    // newPlanes->SetNormals(areaPicker->GetFrustum()->GetNormals());
-    // newPlanes->SetPoints(areaPicker->GetFrustum()->GetPoints());
-
-    // /*  add the new plane to the implicit boolean  */
-    // frustum->AddFunction(newPlanes);
-    // frustum->SetOperationTypeToUnion();
-
-    // /*  extract the geometry by using union planes  */
-    // extractGeo->ExtractInsideOn();
-    // extractGeo->SetImplicitFunction(frustum);
-    // extractGeo->Update();
-    // std::cout << extractGeo->GetOutput()->GetNumberOfCells() << std::endl;
-    // /*  set the selected ugrid to the actor  */
-    // selectMap->SetInputData(extractGeo->GetOutput());
-    // selectActor->SetMapper(selectMap);
-
-    // /*  configure the renderer property  */
-    // selectActor->GetProperty()->SetColor(
-    //     colors->GetColor3d("Tomato").GetData());
-    // selectActor->GetProperty()->SetRepresentationToWireframe();
-    // selectActor->GetProperty()->SetLineWidth(4.0);
-
-    // /*  assign the actor to the renderer  */
-    // ren->AddActor(selectActor);
-    // Interactor->GetRenderWindow()->Render();
-    // HighlightProp(NULL);
-    //    extractGeo->SetInputConnection(idFilter->GetOutputPort());
-    extractGeo->SetInputData(idFilter->GetOutput());
+    /*  extract the cells with in the area picker region  */
     extractGeo->ExtractInsideOn();
     extractGeo->SetImplicitFunction(areaPicker->GetFrustum());
     extractGeo->Update();

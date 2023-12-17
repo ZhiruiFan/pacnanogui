@@ -203,14 +203,15 @@ void pacnano::setupMaterialCreation() {
             &MatAssign::show);
 }
 
-/*  setupRenderWindow: setup the render window for the model displaying,
+/*  ============================================================================
+ *  setupRenderWindow: setup the render window for the model displaying,
  *  such as show the geometry, mesh, rotate the viewport, and zoom the
  *  viewport and so on   */
 void pacnano::setupRenderWindow() {
     /*  Create the render window  */
     renWin       = new Viewer(ui->openGLWidget);
-    // QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
-    QString file = "/Volumes/opt/Documents/code/TopOpt-301-1.vtu";
+    QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
+    //    QString file = "/Volumes/opt/Documents/code/TopOpt-301-1.vtu";
     Field* field = new Field(file);
     renWin->setInputData(field);
 
@@ -236,13 +237,13 @@ void pacnano::setupRenderWindow() {
 
     /*  show the plane view  */
     connect(ui->actXY, &QAction::triggered, renWin,
-            [&]() { renWin->configCameraXY(); });
+            [&]() { renWin->showCameraXY(); });
     connect(ui->actYZ, &QAction::triggered, renWin,
-            [&]() { renWin->configCameraYZ(); });
+            [&]() { renWin->showCameraYZ(); });
     connect(ui->actXZ, &QAction::triggered, renWin,
-            [&]() { renWin->configCameraXZ(); });
+            [&]() { renWin->showCameraXZ(); });
     connect(ui->actXYZ, &QAction::triggered, renWin,
-            [&]() { renWin->configCameraGeneral(); });
+            [&]() { renWin->showCameraAxonometric(); });
 
     /*  hide or extract selection  */
     connect(ui->actHideSelect, &QAction::triggered, renWin,

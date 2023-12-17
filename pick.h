@@ -45,7 +45,8 @@
 
 #include "field.h"
 
-/*  CLASS Pick: this class is used to define the picking process of elements
+/*  ############################################################################
+ *  CLASS Pick: this class is used to define the picking process of elements
  *      and points. Up to now, two selecting method, i.e., region selection and
  *      cliking/single selection is defined.  */
 class Pick : public vtkInteractorStyleRubberBandPick {
@@ -76,16 +77,37 @@ private:
     vtkCellLocator* locator;             // cell locator
     vtkIdTypeArray* cellIds;             // extracted cells
     vtkUnstructuredGrid* cellExtracted;  // the extracted cells
-    vtkIdType numCellExtracted;          // number of extracted cells
 
 public:
     /*  New: create the object using the VTK style  */
     static Pick* New();
     vtkTypeMacro(Pick, vtkInteractorStyleRubberBandPick);
+
     /*  Constructor: create the Pick object  */
     Pick();
 
-    /*  OnLeftButtonUp: override the event for the left button up, i.e.,
+    /*  setCellSelectMode: set the selection mode to cells  */
+    void setCellSelectMode() { mode = true; }
+
+    /*  setPointSelectMode: set the selection model to points  */
+    void setPointSelectMode() { mode = false; }
+
+    /*  setField: assign field variables to the current viewer object
+     *  @param  input: the field that will be operated  */
+    void setField(Field* input);
+
+    /*  setInputData: assign the unstructured grid data to the current object
+     *  @param  input: the unstructured grid be operated  */
+    void setInputData(vtkUnstructuredGrid* input);
+
+    /*  setRenderInfo: set the render window and renderer
+     *  @param  renderWindow: the window to show the model
+     *  @param  renderer: the rendered object  */
+    void setRenderInfo(vtkRenderer* renderer);
+
+public:
+    /*  ########################################################################
+     *  OnLeftButtonUp: override the event for the left button up, i.e.,
      *  define the event when the picking operation is completed  */
     virtual void OnLeftButtonUp() override;
 
@@ -97,26 +119,34 @@ public:
      *  reset the selected components */
     virtual void OnRightButtonUp() override;
 
-    /*  setPolyData: assign the poly data to the current object
-     *  @param  input: the field that will be operated  */
-    void setInputData(vtkUnstructuredGrid* input);
-    void setInputData(Field* input);
-
-    /*  setCellSelectMode: set the selection mode to cells  */
-    void setCellSelectMode() { mode = true; }
-    /*  setPointSelectMode: set the selection model to points  */
-    void setPointSelectMode() { mode = false; }
-
-    /*  setRenderInfo: set the render window and renderer
-     *  @param  renderWindow: the window to show the model
-     *  @param  renderer: the rendered object  */
-    void setRenderInfo(vtkRenderer* renderer);
-
     /*  turnOff: turn off the selection mode, i.e., remove the selection
      *      actor from the render window  */
     void turnOff();
 
-    /*  isPickerActivated: return the status of the picker where whether the
+private:
+    /*  ########################################################################
+     *  onCellRegionSelection: preform the region selection when the piking
+     *  mode is actived.  */
+    void onCellRegionSelection();
+
+    /*  onCellSingleSelection: preform the single selection when the piking
+     *  mode is actived.  */
+    void onCellSingleSelection();
+
+    /*  onPointRegionSelection: preform the region point selection when the
+     *  picking mode is actived.  */
+    void onPointRegionSelection();
+
+    /*  onPointSingleSelection: preform the single point selection when the
+     *  picking mode is actived.  */
+    void onPointSingleSelection();
+
+    /*  showSelectedCells: display the selected cells to the render window  */
+    void showSelectedCells();
+
+public:
+    /*  ########################################################################
+     *  isPickerActivated: return the status of the picker where whether the
      *      actor is activated.
      *   @return  if the actor is actived  */
     bool isPickerActivated() { return isActivated; }
@@ -129,25 +159,19 @@ public:
     /*  getFrustum: get the frustum or vtk planes of the area picker  */
     vtkImplicitBoolean* getFrustum() { return frustum; }
 
-private:
-    /*  onCellRegionSelection: preform the region selection when the piking
-     *  mode is actived.  */
-    void onCellRegionSelection();
+    /*  getSelectedCellIds: return the id set of the selected cells
+     *  @return  the selected cell ids  */
+    vtkIdTypeArray* getSelectedCellIds() { return cellIds; }
 
-    /*  onCellSingleSelection: preform the single selection when the piking
-     *  mode is actived.  */
-    void onCellSingleSelection();
+    /*  getIdFilterPort: get the idFilter with respect to the current field
+     *  variables
+     *  @return   the port of the idFilter  */
+    vtkIdFilter* getIdFilter() { return idFilter; }
 
-    /*  showSelectedCells: display the selected cells to the render window  */
-    void showSelectedCells();
-
-    /*  onPointRegionSelection: preform the region point selection when the
-     *  picking mode is actived.  */
-    void onPointRegionSelection();
-
-    /*  onPointSingleSelection: preform the single point selection when the
-     *  picking mode is actived.  */
-    void onPointSingleSelection();
+    /*  getCellLocator: get the cell locator to quirey the cell using centroid
+     *  location
+     *  @return  the cell locator  */
+    vtkCellLocator* getCellLocator() { return locator; }
 };
 
 #endif  // PICK_H

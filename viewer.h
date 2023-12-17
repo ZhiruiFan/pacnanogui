@@ -21,9 +21,7 @@
 #include <vtkAxesActor.h>
 #include <vtkCamera.h>
 #include <vtkDataSetMapper.h>
-#include <vtkDataSetSurfaceFilter.h>
 #include <vtkDoubleArray.h>
-#include <vtkExtractGeometry.h>
 #include <vtkExtractSelection.h>
 #include <vtkGenericOpenGLRenderWindow.h>
 #include <vtkImplicitBoolean.h>
@@ -31,7 +29,6 @@
 #include <vtkLookupTable.h>
 #include <vtkNamedColors.h>
 #include <vtkOrientationMarkerWidget.h>
-#include <vtkPlanes.h>
 #include <vtkProp.h>
 #include <vtkProperty.h>
 #include <vtkProperty2D.h>
@@ -65,18 +62,19 @@ private:
     Field* field;                                  // filed to be shown
     int recorder[3];                               // filed varaible recorder
     bool isAssigedField;                           // field assignment flag
+    bool isModelLoaded;                            // has model loaded
 
     Camera* camera;                                // camera configuration
 
     QVTKOpenGLNativeWidget* win;                   // main window
     vtkGenericOpenGLRenderWindow* renWin;          // render window
     vtkRenderer* render;                           // render object
-    vtkNamedColors* colors;                        // color object
+    vtkActor* actor;                               //  actor of the viewerport
     vtkDataSetMapper* dtMap;                       // data set mapper
+    vtkNamedColors* colors;                        // color object
+
     vtkLookupTable* lut;                           // lookup table
     vtkCamera* originCamera;                       // original camera
-
-    vtkActor* actor;                               //  actor of the viewerport
     vtkAxesActor* actaxis;                         // axis actor
     vtkOrientationMarkerWidget* axis;              // axis object
     vtkScalarBarActor* scalarBar;                  // scalar bar
@@ -88,30 +86,44 @@ private:
     vtkUnstructuredGrid* ugridCur;                 // current ugrid
     vtkRenderWindowInteractor* interact;           // interactor
     vtkInteractorStyleTrackballCamera* initStyle;  // initial style
-    vtkImplicitBoolean* frustum;                   // picker frustum
 
-    vtkExtractGeometry* extractGeo;                // model clip handler
-    bool isCliped;                                 // clip flag
-
-    vtkSelectionNode* idsSelector;                 // selection node
+    vtkSelectionNode* nodeSelector;                // selection node
     vtkSelection* cellSelector;                    // cell selection
     vtkExtractSelection* extractor;                // extract operator
+    vtkIdTypeArray* cellIdsCur;                    // currently selected cells
+    vtkIdTypeArray* cellIdsAll;                    // the all selected cells
+    vtkCellLocator* locator;                       // cell locator
+    vtkPoints* points;                             // points in cell
+    double cellCenter[3];                          // cell center location
+    double point[3];                               // point location
 
     /*  data information  */
     QMap<int, char> compName = {{0, 'X'}, {1, 'Y'}, {2, 'Z'}};
 
 public:
-    /*  constructor: create the render window to show the FEM model
+    /*  ########################################################################
+     *  constructor: create the render window to show the FEM model
      *  @param  window: the openGL widget   */
     Viewer(QVTKOpenGLNativeWidget* window);
 
     /*  destructor: destroy the render object  */
     ~Viewer();
 
-    /*  configCamera: config the parameters of the camera  */
+    /*  configCamera: show the dialog to configuration camera paramerters*/
     void configCamera() { camera->show(); }
 
-    /*  setInputData: set the input filed data that will be shown in the render
+    /*  showScalarBar: configure the style and show the scalar bar */
+    void showScalarBar();
+
+    /*  configure the small widget in the render window  */
+    void showCameraAxonometric();  // show the axonometric view
+    void showCameraXY();           // set the camera to the XY plane
+    void showCameraYZ();           // set the camera to the YZ plane
+    void showCameraXZ();           // set the camera to the XZ plane
+
+public:
+    /*  ########################################################################
+     *  setInputData: set the input filed data that will be shown in the render
      *      window.
      *  @param  input: the filed varaible  */
     void setInputData(Field*& input);
@@ -120,6 +132,7 @@ public:
      *      show the model as current configuration  */
     void showCompleteModel();
 
+public:
     /*  showModel: display the geometry of the model
      *  @param  field: the field variable to be shown  */
     void showModel();
@@ -128,9 +141,22 @@ public:
      *  @param  field: the field variable to be shown  */
     void showMesh();
 
+    /*  pickCells: pick up the cells in the viewerport using the mouse box
+     *  selection or mouse click method.
+     *  @param  mode: node or element selection mode. If true, the node
+     *                selection mode is activated. Otherwise, the element
+     *                selection mode is activated.  */
+    void pickupCells(bool mode);
+
+    /*  hideSelectedCells: hide the cells selected by the picker  */
+    void hideSelectedCells();
+
+    /*  showSelectedCells: show the cells selected by the picker  */
+    void showSelectedCells();
+
+public:
     /*  showPointField: display the information with respect to the nodes,
      *  it includes the nodal displacement, reaction force and so on
-     *  @param  field: the field that to be shown
      *  @param  idx: the index of the component in the data set
      *  @param  comp: the component index  */
     void showPointField(const int& idx, const int& comp);
@@ -138,33 +164,8 @@ public:
     /*  showCellField: display the information with respect to the elements,
      *  it includes the stress components, design variables in topology
      *  optimization and so on
-     *  @param  field: the field that to be shown
      *  @param  idx: the index of the component in the data set  */
     void showCellField(const int& idx);
-
-    /*  extract the point and cell data  */
-    void extractFieldData(vtkUnstructuredGrid*& grid);
-
-    /*  pickCells: pick up the cells in the viewerport using the mouse box
-     *  selection method.
-     *  @param  filed: the field variable that will be shown
-     *  @param  mode: node or element selection mode. If true, the node
-     *                selection mode is activated. Otherwise, the element
-     *                selection mode is activated.  */
-    void pickupCells(bool mode);
-
-    /*  configure the small widget in the render window  */
-    void configCameraGeneral();  // configure the camera
-    void configCameraXY();       // set the camera to the XY plane
-    void configCameraYZ();       // set the camera to the YZ plane
-    void configCameraXZ();       // set the camera to the XZ plane
-    void configScalarBar();      // scalar bar
-
-    /*  hideSelectedCells: hide the cells selected by the picker  */
-    void hideSelectedCells();
-
-    /*  showSelectedCells: show the cells selected by the picker  */
-    void showSelectedCells();
 
 private:
     /*  configure the status bar, which includes the system time, model

@@ -26,27 +26,29 @@
  *  constructor : create the Field object.
  *  @param name : the name of the field */
 Field::Field(QString& _name) {
-    //  assign the name of the Field
+    /*  assign the name of the filed  */
     name = _name;
 
-    //  define the reader
+    /*  setup the ugrd reader  */
     reader = vtkXMLUnstructuredGridReader::New();
     reader->SetFileName(name.toStdString().c_str());
     reader->Update();
 
-    //  read the informaiton of the vtu file
-    ugrid = reader->GetOutput();
-    port  = reader->GetOutputPort();
-
-    //  get the filed data
+    /*  read the field data  */
+    ugrid     = reader->GetOutput();
+    port      = reader->GetOutputPort();
     pointData = ugrid->GetPointData();
     cellData  = ugrid->GetCellData();
 
-    //  warp vector
+    /*  create the warpper object  */
     warp      = vtkWarpVector::New();
-    ifMeshed  = true;
     warpScale = 200.0;
     warp->SetInputData(ugrid);
+
+    /*  create the threshold  */
+    threshold  = vtkThreshold::New();
+    lowerLimit = 0.0;
+    upperLimit = 1.0;
 }
 
 /*  ============================================================================
@@ -61,24 +63,88 @@ Field::~Field() {
     reader->Delete();
 }
 
+/*  ============================================================================
+ *  checkAnchor: check the anchor filed variable is included or not?
+ *  @return  the checked status, ture for sucessed, otherwise failed  */
+bool Field::checkAnchor() {
+    /*  define the temporary varaible  */
+    int idx = 0;
+
+    /*  extract the anchor of the warpping  */
+    numPointField = pointData->GetNumberOfArrays();
+    for (idx = 0; idx < numPointField; ++idx) {
+        if (std::strcmp(pointData->GetArrayName(idx), "U") == 0) {
+            idxU = idx;
+            break;
+        }
+    }
+    /*  check the warping anchor  */
+    return idx < numPointField ? true : false;
+
+    /*  extract the anchor of the threshold  */
+    numCellField = cellData->GetNumberOfArrays();
+    for (idx = 0; idx < numCellField; ++idx) {
+        if (std::strcmp(pointData->GetArrayName(idx), "DEN") == 0) {
+            idxDen = idx;
+            break;
+        }
+    }
+    /*  check the threshold status  */
+    return idx < numCellField ? true : false;
+}
+
+/*  ============================================================================
+ *  updateAnchor: update the anchor field
+ *  @param  scale: the warping scale
+ *  @param  lower: the lower limit of the threshold
+ *  @param  upper: the uppre limit of the threshold  */
+void Field::updateAnchor(const double& scale, const double& lower,
+                         const double& upper) {
+    /*  update the warper  */
+    updateWarper(scale);
+
+    /*  update the threshold  */
+    updateThreshold(lower, upper);
+}
+
 /*  ############################################################################
  *  updateWarper: update the configuration of the warper, which is used to
  *  show the deformed configuration of the FEM model
- *  @return  the status in warpper updating  */
-bool Field::updateWarper() {
-    /*  Ge the anchor of the warpping  */
-    int idx = 0;
-    for (idx = 0; idx < pointData->GetNumberOfArrays(); ++idx) {
-        if (std::strcmp(pointData->GetArrayName(idx), "U") == 0) break;
-    }
-    //  check the status
-    if (idx == pointData->GetNumberOfArrays()) return false;
+ *  @param  scale: the warping scale factor  */
+void Field::updateWarper(const double& scale) {
+    /*  check the warping scale is changed  */
+    if (warpScale != scale) {
+        /*  update the warping scale  */
+        warpScale = scale;
 
-    /*  set the anchor of the warpper  */
-    warp->SetInputArrayToProcess(0, 0, 0,
-                                 vtkDataObject::FIELD_ASSOCIATION_POINTS,
-                                 pointData->GetArray(idx)->GetName());
-    warp->SetScaleFactor(warpScale);
-    warp->Update();
-    return true;
+        /*  set the anchor of the warpper  */
+        warp->SetInputArrayToProcess(0, 0, 0,
+                                     vtkDataObject::FIELD_ASSOCIATION_POINTS,
+                                     pointData->GetArray(idxU)->GetName());
+        warp->SetScaleFactor(warpScale);
+        warp->Update();
+    }
+}
+
+/*  ============================================================================
+ *  updateThreshold: update the threshold according to the optimized element
+ *  density, i.e., the cells not in the given limits will be hiden
+ *  @param  lower: the lower limit of the threshold
+ *  @param  upper: the higher limit of the threshold  */
+void Field::updateThreshold(const double& lower, const double& upper) {
+    /*  check the limits is updated or not  */
+    if (upperLimit != upper || lower == lowerLimit) {
+        /*  update the lower and upper limits  */
+        lowerLimit = lower;
+        upperLimit = upper;
+
+        /*  update the anchor the threshold  */
+        threshold->SetInputConnection(warp->GetOutputPort());
+        threshold->SetInputArrayToProcess(
+            0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_CELLS,
+            cellData->GetArray(idxDen)->GetName());
+        threshold->SetLowerThreshold(lowerLimit);
+        threshold->SetUpperThreshold(upperLimit);
+        threshold->Update();
+    }
 }

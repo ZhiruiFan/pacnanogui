@@ -29,38 +29,32 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     /*  setup the render for FEM model viewer */
     renWin = vtkGenericOpenGLRenderWindow::New();
     render = vtkRenderer::New();
+    colors = vtkNamedColors::New();
+    actor  = vtkActor::New();
+    //  configuration
+    render->AddActor(actor);
     renWin->AddRenderer(render);
     win->setRenderWindow(renWin);
-    colors = vtkNamedColors::New();
     render->SetBackground(colors->GetColor3d("White").GetData());
 
     /*  field variables  */
     ugridCur       = vtkUnstructuredGrid::New();
+    dtMap          = vtkDataSetMapper::New();
     isAssigedField = false;
-
-    /*  create the data mapper  */
-    dtMap = vtkDataSetMapper::New();
-
-    /*  create the actor  */
-    actor = vtkActor::New();
-    render->AddActor(actor);
+    isAssigedField = false;
+    isModelLoaded  = false;
 
     /*  Picker vriables  */
-    pick = Pick::New();
-
-    /*  interactor  variables  */
-    interact  = renWin->GetInteractor();
-    initStyle = vtkInteractorStyleTrackballCamera::New();
-
-    /*  Cliper  */
-    frustum      = vtkImplicitBoolean::New();
-    extractGeo   = vtkExtractGeometry::New();
-    isCliped     = false;
-    idsSelector  = vtkSelectionNode::New();
+    pick         = Pick::New();
+    interact     = renWin->GetInteractor();
+    initStyle    = vtkInteractorStyleTrackballCamera::New();
+    nodeSelector = vtkSelectionNode::New();
     cellSelector = vtkSelection::New();
     extractor    = vtkExtractSelection::New();
-    idsSelector->SetFieldType(vtkSelectionNode::CELL);
-    idsSelector->SetContentType(vtkSelectionNode::INDICES);
+    cellIdsAll   = vtkIdTypeArray::New();
+    //  configurations
+    nodeSelector->SetFieldType(vtkSelectionNode::CELL);
+    nodeSelector->SetContentType(vtkSelectionNode::INDICES);
 
     /*  coordinates system  */
     axis    = vtkOrientationMarkerWidget::New();
@@ -94,12 +88,12 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     /*  Scalar bar  */
     scalarBar         = vtkScalarBarActor::New();
     isScalarBarPlayed = false;
-    configScalarBar();
+    showScalarBar();
 
     /*  Camera configuration  */
     originCamera = vtkCamera::New();
     originCamera->DeepCopy(render->GetActiveCamera());
-    configCameraGeneral();
+    showCameraAxonometric();
 }
 
 /*  ============================================================================
@@ -131,8 +125,11 @@ Viewer::~Viewer() {
 void Viewer::setInputData(Field*& input) {
     /*  set the field variable that will be shown  */
     field = input;
+    pick->setField(input);
+
     /*  copy the current unstructured data for operation  */
     ugridCur->DeepCopy(field->ugrid);
+
     /*  update the flag  */
     isAssigedField = true;
 };
@@ -142,7 +139,7 @@ void Viewer::setInputData(Field*& input) {
  *      show the model as current configuration  */
 void Viewer::showCompleteModel() {
     /*  check the status  */
-    if (isAssigedField) {
+    if (isModelLoaded) {
         /*  reset the unstructured grid to original  */
         ugridCur->DeepCopy(field->ugrid);
 
@@ -171,59 +168,59 @@ void Viewer::showCompleteModel() {
  *  showModel: display the model geometry in the viewer object
  *  @param  index: the index of the model that will be shown  */
 void Viewer::showModel() {
-    /*  assign the recorder  */
-    recorder[0] = 0;
+    /*  check the field is assigned or not  */
+    if (isAssigedField) {
+        /*  assign the recorder  */
+        recorder[0] = 0;
 
-    /*  reset the interactor style  */
-    pick->turnOff();
-    interact->SetInteractorStyle(initStyle);
+        /*  reset the interactor style  */
+        pick->turnOff();
+        interact->SetInteractorStyle(initStyle);
 
-    /*  set the head information  */
-    QString info = "Geometry of the current model";
-    configStatusBar(field->name, info);
+        /*  set the head information  */
+        QString info = "Geometry of the current model";
+        configStatusBar(field->name, info);
 
-    /*  set the data to the viewer  */
-    dtMap->SetInputData(ugridCur);
-    dtMap->ScalarVisibilityOff();
+        /*  set the data to the viewer  */
+        dtMap->SetInputData(ugridCur);
+        dtMap->ScalarVisibilityOff();
 
-    /*  configure the actor  */
-    actor->GetProperty()->SetColor(colors->GetColor3d("cyan").GetData());
-    actor->GetProperty()->SetEdgeVisibility(0);
-    actor->GetProperty()->SetLineWidth(2.0);
-    actor->SetMapper(dtMap);
+        /*  configure the actor  */
+        actor->GetProperty()->SetColor(colors->GetColor3d("cyan").GetData());
+        actor->GetProperty()->SetEdgeVisibility(0);
+        actor->GetProperty()->SetLineWidth(2.0);
+        actor->SetMapper(dtMap);
 
-    /*  show mesh and config camera  */
-    render->ResetCamera();
-    renWin->Render();
+        /*  show mesh and config camera  */
+        render->ResetCamera();
+        renWin->Render();
+
+        /*  update the model loaded flag  */
+        isModelLoaded = true;
+    }
 }
 
 /*  ############################################################################
  *  showMesh: display the FEM model in the viewer object
  *  @param  file: the file to read the model mesh information  */
 void Viewer::showMesh() {
-    /*  assign the recorder  */
-    recorder[0] = 1;
+    /*  check the status of the model  */
+    if (isModelLoaded) {
+        /*  assign the recorder  */
+        recorder[0] = 1;
 
-    /*  turn off the picker  */
-    pick->turnOff();
+        /*  set the head information  */
+        QString info = "Geometry of the current model";
+        configStatusBar(field->name, info);
 
-    /*  set the head information  */
-    QString info = "Geometry of the current model";
-    configStatusBar(field->name, info);
+        /*  configure the actor  */
+        actor->GetProperty()->SetColor(colors->GetColor3d("cyan").GetData());
+        actor->GetProperty()->SetEdgeVisibility(1);
+        actor->GetProperty()->SetLineWidth(0.0);
 
-    /*  set the data to the viewer  */
-    dtMap->SetInputData(ugridCur);
-    dtMap->ScalarVisibilityOff();
-
-    /*  configure the actor  */
-    actor->GetProperty()->SetColor(colors->GetColor3d("cyan").GetData());
-    actor->GetProperty()->SetEdgeVisibility(1);
-    actor->GetProperty()->SetLineWidth(0.0);
-    //    actor->SetMapper(dtMap);
-
-    /*  show mesh and config camera  */
-    //    render->ResetCamera();
-    renWin->Render();
+        /*  show mesh and config camera  */
+        renWin->Render();
+    }
 }
 
 /*  ############################################################################
@@ -240,6 +237,10 @@ void Viewer::showPointField(const int& index, const int& comp) {
 
     /*  Get the the field  */
     vtkDataArray* dtOld = field->pointData->GetArray(index);
+
+    /*  Config the status bar  */
+    QString info = "Plot the calculated field of the finite element model.";
+    configStatusBar(field->name, info);
 
     /*  Create the temporary variable to show field  */
     vtkDoubleArray* dtCur = vtkDoubleArray::New();
@@ -288,10 +289,6 @@ void Viewer::showPointField(const int& index, const int& comp) {
     /*  Update the warpper  */
     field->updateWarper();
 
-    /*  Config the status bar  */
-    QString info = "Plot the calculated field of the finite element model.";
-    configStatusBar(field->name, info);
-
     /*  setup the mapper  */
     dtMap->SetInputConnection(field->warp->GetOutputPort());
     dtMap->SetScalarVisibility(1);
@@ -310,9 +307,146 @@ void Viewer::showPointField(const int& index, const int& comp) {
     renWin->Render();
 }
 
+/*  showCellField: display the information with respect to the elements,
+ *  it includes the stress components, design variables in topology
+ *  optimization and so on
+ *  @param  idx: the index of the component in the data set  */
+void showCellField(const int& idx);
+
+/*  ############################################################################
+ *  pickCells: pick up the cells in the viewerport using the mouse box
+ *  selection method.
+ *  @param  field: the field that will be shown
+ *  @param  mode: node or element selection mode, if true, then node selection
+ *                mode; else element selection mode  */
+void Viewer::pickupCells(bool mode) {
+    /*  check the model is loaded or not  */
+    if (isModelLoaded) {
+        /*  set the head information  */
+        QString info = "Geometry of the current model";
+        configStatusBar(field->name, info);
+
+        /*  set the data to the viewer  */
+        dtMap->SetInputData(ugridCur);
+        dtMap->ScalarVisibilityOff();
+
+        /*  configure the actor  */
+        actor->GetProperty()->SetColor(colors->GetColor3d("cyan").GetData());
+        actor->SetMapper(dtMap);
+
+        /*  create the picker  */
+        pick->setInputData(ugridCur);
+        pick->setRenderInfo(render);
+        //  determine the selection mode
+        if (mode) {
+            pick->setCellSelectMode();
+        } else {
+            pick->setPointSelectMode();
+        }
+        //  set the picker to the interactor
+        interact->SetInteractorStyle(pick);
+        pick->OnLeftButtonUp();
+    }
+}
+
+/*  ############################################################################
+ *  hideSelectedCells: hide the cells selected by the picker  */
+void Viewer::hideSelectedCells() {
+    /*  Get the picker status  */
+    if (pick->isPickerActivated() && pick->isCellSelectionModeOn()) {
+        cellIdsCur = pick->getSelectedCellIds();
+        for (vtkIdType i = 0; i < cellIdsCur->GetNumberOfValues(); ++i) {
+            cellIdsAll->InsertNextValue(cellIdsCur->GetValue(i));
+        }
+
+        /*  get the inverse of the selected cells  */
+        nodeSelector->GetProperties()->Set(vtkSelectionNode::INVERSE(), 1);
+        nodeSelector->SetSelectionList(cellIdsAll);
+        cellSelector->AddNode(nodeSelector);
+        extractor->SetInputConnection(0, pick->getIdFilter()->GetOutputPort());
+        extractor->SetInputData(1, cellSelector);
+        extractor->Update();
+
+        /*  get the unstructured grid of the unselected cells  */
+        ugridCur->ShallowCopy(extractor->GetOutput());
+        dtMap->SetInputData(ugridCur);
+        pick->turnOff();
+        interact->SetInteractorStyle(initStyle);
+
+        /*  render the window  */
+        renWin->Render();
+    }
+}
+
 /*  ============================================================================
- *  configCamera: configure the camera to show the FEM model appropriately  */
-void Viewer::configCameraGeneral() {
+ *  showSelectedCells: show the cells selected by the picker  */
+void Viewer::showSelectedCells() {
+    /*  Get the picker status  */
+    if (pick->isPickerActivated() && pick->isCellSelectionModeOn()) {
+        /*  get the inverse of the selected cells  */
+        cellIdsCur = pick->getSelectedCellIds();
+
+        /*  get the unstructured grid of the unselected cells  */
+        nodeSelector->GetProperties()->Set(vtkSelectionNode::INVERSE(), 1);
+        nodeSelector->SetSelectionList(cellIdsCur);
+        cellSelector->AddNode(nodeSelector);
+        extractor->SetInputConnection(0, pick->getIdFilter()->GetOutputPort());
+        extractor->SetInputData(1, cellSelector);
+        extractor->Update();
+        ugridCur->ShallowCopy(extractor->GetOutput());
+
+        /*  extract the unselected cell ids  */
+        //  get the locator
+        locator = pick->getCellLocator();
+        //  extract the cell ids
+        cellIdsAll->Initialize();
+        for (vtkIdType i = 0; i < ugridCur->GetNumberOfCells(); ++i) {
+            /*  Calcualte the center location of the current cell  */
+            //  reset the center coordiantes
+            cellCenter[0] = 0.0;
+            cellCenter[1] = 0.0;
+            cellCenter[2] = 0.0;
+            //  extract the points
+            points = ugridCur->GetCell(i)->GetPoints();
+            //  get the number of points in current cell
+            vtkIdType numPoints = points->GetNumberOfPoints();
+            //  calculate the location of the cell
+            for (vtkIdType pointId = 0; pointId < numPoints; ++pointId) {
+                points->GetPoint(pointId, point);
+                cellCenter[0] += point[0];
+                cellCenter[1] += point[1];
+                cellCenter[2] += point[2];
+            }
+            cellCenter[0] /= numPoints;
+            cellCenter[1] /= numPoints;
+            cellCenter[2] /= numPoints;
+            //  find the cell id
+            locator->SetTolerance(0.001);
+            cellIdsAll->InsertNextValue(locator->FindCell(cellCenter));
+        }
+
+        /*  extract the selected cells  */
+        nodeSelector->GetProperties()->Set(vtkSelectionNode::INVERSE(), 0);
+        nodeSelector->SetSelectionList(cellIdsCur);
+        cellSelector->AddNode(nodeSelector);
+        extractor->SetInputConnection(0, pick->getIdFilter()->GetOutputPort());
+        extractor->SetInputData(1, cellSelector);
+        extractor->Update();
+
+        /*  get the unstructured grid of the unselected cells  */
+        ugridCur->ShallowCopy(extractor->GetOutput());
+        dtMap->SetInputData(ugridCur);
+        pick->turnOff();
+        interact->SetInteractorStyle(initStyle);
+
+        /*  render the window  */
+        renWin->Render();
+    }
+}
+
+/*  ############################################################################
+ *  showCamera: configure the camera to show the axionometric view  */
+void Viewer::showCameraAxonometric() {
     /*  reset to camera to the original  */
     render->GetActiveCamera()->DeepCopy(originCamera);
     /*  set the camera configuration  */
@@ -322,9 +456,10 @@ void Viewer::configCameraGeneral() {
     render->ResetCamera();
     renWin->Render();
 }
+
 /*  ============================================================================
- *  configCamera: configure the camera to show the FEM model appropriately  */
-void Viewer::configCameraXY() {
+ *  showCameraXY: configure the camera to show the XY plane view  */
+void Viewer::showCameraXY() {
     /*  reset to camera to the original  */
     render->GetActiveCamera()->DeepCopy(originCamera);
     /*  set the camera configuration  */
@@ -337,8 +472,8 @@ void Viewer::configCameraXY() {
 }
 
 /*  ============================================================================
- *  configCamera: configure the camera to show the FEM model appropriately  */
-void Viewer::configCameraXZ() {
+ *  showCameraXZ: configure the camera to show XZ plane view  */
+void Viewer::showCameraXZ() {
     /*  reset to camera to the original  */
     render->GetActiveCamera()->DeepCopy(originCamera);
     /*  set the camera configuration  */
@@ -351,8 +486,8 @@ void Viewer::configCameraXZ() {
 }
 
 /*  ============================================================================
- *  configCamera: configure the camera to show the FEM model appropriately  */
-void Viewer::configCameraYZ() {
+ *  showCameraYZ: configure the camera to show the YZ plane view  */
+void Viewer::showCameraYZ() {
     /*  reset to camera to the original  */
     render->GetActiveCamera()->DeepCopy(originCamera);
 
@@ -364,7 +499,7 @@ void Viewer::configCameraYZ() {
     renWin->Render();
 }
 
-/*  ============================================================================
+/*  ############################################################################
  *  configure the status bar, which includes the system time, model
  *  information
  *  @param  file: the model that will be displayed
@@ -387,8 +522,8 @@ void Viewer::configStatusBar(QString& file, QString& info) {
 }
 
 /*  ============================================================================
- *  configScalarBar: configure the scalar bar style  */
-void Viewer::configScalarBar() {
+ *  showScalarBar: configure the scalar bar style and then display it  */
+void Viewer::showScalarBar() {
     /*  turn off the auto font setting */
     scalarBar->UnconstrainedFontSizeOn();
 
@@ -418,87 +553,4 @@ void Viewer::configScalarBar() {
 
     /*  label data format  */
     scalarBar->SetLabelFormat("%.4e");
-}
-
-/*  ############################################################################
- *  pickCells: pick up the cells in the viewerport using the mouse box
- *  selection method.
- *  @param  field: the field that will be shown
- *  @param  mode: node or element selection mode, if true, then node selection
- *                mode; else element selection mode  */
-void Viewer::pickupCells(bool mode) {
-    /*  set the head information  */
-    QString info = "Geometry of the current model";
-    configStatusBar(field->name, info);
-
-    /*  set the data to the viewer  */
-    dtMap->SetInputData(ugridCur);
-    dtMap->ScalarVisibilityOff();
-
-    /*  configure the actor  */
-    actor->GetProperty()->SetColor(colors->GetColor3d("cyan").GetData());
-    actor->SetMapper(dtMap);
-
-    /*  create the picker  */
-    pick->setInputData(field);
-    pick->setRenderInfo(render);
-    //  determine the selection mode
-    if (mode) {
-        pick->setCellSelectMode();
-    } else {
-        pick->setPointSelectMode();
-    }
-    //  set the picker to the interactor
-    interact->SetInteractorStyle(pick);
-    pick->OnLeftButtonUp();
-}
-
-/*  ############################################################################
- *  hideSelectedCells: hide the cells selected by the picker  */
-void Viewer::hideSelectedCells() {
-    /*  Get the picker status  */
-    if (pick->isPickerActivated() && pick->isCellSelectionModeOn()) {
-        /*  append the cliping frustum  */
-        frustum->AddFunction(pick->getFrustum());
-        frustum->SetOperationTypeToUnion();
-
-        /*  initialize the geometry extraction object  */
-        extractGeo->ExtractInsideOff();
-        extractGeo->SetInputData(ugridCur);
-        extractGeo->SetImplicitFunction(frustum);
-        extractGeo->Update();
-
-        /*  show the extract geometry  */
-        dtMap->SetInputData(extractGeo->GetOutput());
-        pick->turnOff();
-        interact->SetInteractorStyle(initStyle);
-
-        /*  update the current ugrid  */
-        renWin->Render();
-        std::cout << "The reset cells: "
-                  << extractGeo->GetOutput()->GetNumberOfCells() << std::endl;
-        ugridCur->DeepCopy(extractGeo->GetOutput());
-    }
-}
-
-/*  ============================================================================
- *  showSelectedCells: show the cells selected by the picker  */
-void Viewer::showSelectedCells() {
-    /*  Get the picker status  */
-    if (pick->isPickerActivated() && pick->isCellSelectionModeOn()) {
-        /*  initialize the geometry extraction object  */
-        extractGeo->ExtractInsideOn();
-        extractGeo->SetInputData(field->ugrid);
-        extractGeo->SetImplicitFunction(pick->getFrustum());
-        extractGeo->Update();
-
-        /*  show the extract geometry  */
-        dtMap->SetInputData(extractGeo->GetOutput());
-        pick->turnOff();
-        interact->SetInteractorStyle(initStyle);
-        renWin->Render();
-
-        /*  update the current ugrid  */
-        ugridCur->DeepCopy(extractGeo->GetOutput());
-    }
 }
