@@ -142,6 +142,8 @@ void Viewer::showCompleteModel() {
     if (isModelLoaded) {
         /*  reset the unstructured grid to original  */
         ugridCur->DeepCopy(field->ugrid);
+        pick->setInputData(ugridCur);
+        cellIdsAll->Initialize();
 
         /*  show the field data as current configuration  */
         switch (recorder[0]) {
@@ -287,7 +289,7 @@ void Viewer::showPointField(const int& index, const int& comp) {
     }
 
     /*  Update the warpper  */
-    field->updateWarper();
+    field->updateAnchor(200.0, 0.0, 1.0);
 
     /*  setup the mapper  */
     dtMap->SetInputConnection(field->warp->GetOutputPort());

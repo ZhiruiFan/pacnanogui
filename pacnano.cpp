@@ -209,9 +209,9 @@ void pacnano::setupMaterialCreation() {
  *  viewport and so on   */
 void pacnano::setupRenderWindow() {
     /*  Create the render window  */
-    renWin       = new Viewer(ui->openGLWidget);
-    QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
-    //    QString file = "/Volumes/opt/Documents/code/TopOpt-301-1.vtu";
+    renWin = new Viewer(ui->openGLWidget);
+    // QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
+    QString file = "/Volumes/opt/Documents/code/TopOpt-301-1.vtu";
     Field* field = new Field(file);
     renWin->setInputData(field);
 
