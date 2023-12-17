@@ -311,7 +311,7 @@ void Viewer::showPointField(const int& index, const int& comp) {
  *  it includes the stress components, design variables in topology
  *  optimization and so on
  *  @param  idx: the index of the component in the data set  */
-void showCellField(const int& idx);
+void Viewer::showCellField(const int& idx) {}
 
 /*  ############################################################################
  *  pickCells: pick up the cells in the viewerport using the mouse box
