@@ -18,6 +18,7 @@
 
 #include <QMainWindow>
 #include <QPushButton>
+#include <QStackedWidget>
 
 #include "matassign.h"
 #include "material.h"
@@ -37,14 +38,15 @@ class pacnano : public QMainWindow {
     Q_OBJECT
 
 private:
-    Ui::pacnano *ui;       // ui interface
-    Remote *remote;        // remote server login UI
-    Open *openDir;         // open the directory
-    Project *project;      // pacnano project
-    Model *model;          //  model object
-    Material *material;    // material dialog
-    Viewer *renWin;        // render window
-    MatAssign *matAssign;  // material assignment
+    Ui::pacnano *ui;         // ui interface
+    Remote *remote;          // remote server login UI
+    Open *openDir;           // open the directory
+    Project *project;        // pacnano project
+    Model *model;            //  model object
+    Material *material;      // material dialog
+    Viewer *renWin;          // render window
+    MatAssign *matAssign;    // material assignment
+    QToolBar *innerToolBar;  // inner tool bar for user interaction
 
 public:
     /*  constructor :

@@ -86,6 +86,9 @@ public:
     /*  Constructor: create the Pick object  */
     Pick();
 
+    /*  setActivate: set the activate status for the picker  */
+    void setActivateStatus(const bool& status) { isActivated = status; }
+
     /*  setCellSelectMode: set the selection mode to cells  */
     void setCellSelectMode() { mode = true; }
 

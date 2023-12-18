@@ -29,13 +29,19 @@ pacnano::pacnano(QWidget* parent) : QMainWindow(parent), ui(new Ui::pacnano) {
     /*  Model tree  */
     ui->modelTree->expandAll();
 
+    /*  Create the small widget  */
     setupProject();           // create project
     setupModel();             // setup model environment
     setupMaterialCreation();  // material creation
     setupViewportSwitch();    // viewport setting
     setupRenderWindow();      // set up the vtk render window
 
-    /*  openGL widget to show the FEM model  */
+    /*  show the welcome window  */
+    ui->mainView->setCurrentIndex(0);
+    ui->viewWindow->hide();
+
+    /*  hide the message tool bar  */
+    ui->innerTool->setCurrentIndex(0);
 }
 
 /*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -209,9 +215,9 @@ void pacnano::setupMaterialCreation() {
  *  viewport and so on   */
 void pacnano::setupRenderWindow() {
     /*  Create the render window  */
-    renWin = new Viewer(ui->openGLWidget);
-    // QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
-    QString file = "/Volumes/opt/Documents/code/TopOpt-301-1.vtu";
+    renWin       = new Viewer(ui->viewWindow);
+    QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
+    // QString file = "/Volumes/opt/Documents/code/TopOpt-301-1.vtu";
     Field* field = new Field(file);
     renWin->setInputData(field);
 
@@ -228,8 +234,11 @@ void pacnano::setupRenderWindow() {
             [&]() { renWin->pickupCells(true); });
 
     /*  connect to show geometry  */
-    connect(ui->actShowGeom, &QAction::triggered, renWin,
-            [&]() { renWin->showModel(); });
+    connect(ui->actShowGeom, &QAction::triggered, renWin, [&]() {
+        ui->mainView->setCurrentIndex(1);
+        ui->viewWindow->show();
+        renWin->showModel();
+    });
 
     /*  connect to show geometry  */
     connect(ui->actShowMesh, &QAction::triggered, renWin,
@@ -245,11 +254,53 @@ void pacnano::setupRenderWindow() {
     connect(ui->actXYZ, &QAction::triggered, renWin,
             [&]() { renWin->showCameraAxonometric(); });
 
-    /*  hide or extract selection  */
-    connect(ui->actHideSelect, &QAction::triggered, renWin,
-            [&]() { renWin->hideSelectedCells(); });
-    connect(ui->actHideReverse, &QAction::triggered, renWin,
-            [&]() { renWin->showSelectedCells(); });
+    /*  hide selection  */
+    connect(ui->btnHideCellCancel, &QPushButton::clicked, ui->innerTool, [&]() {
+        // ui->innerTool->hide();
+        ui->innerTool->setCurrentIndex(0);
+        renWin->turnOffPickMode();
+        ui->actHideReverse->setDisabled(false);
+    });
+    connect(ui->btnHideCellOk, &QPushButton::clicked, ui->innerTool, [&]() {
+        renWin->hideSelectedCells();
+        ui->innerTool->setCurrentIndex(0);
+        ui->actHideReverse->setDisabled(false);
+    });
+    connect(ui->actHideSelect, &QAction::triggered, renWin, [&]() {
+        //  get the status of the picker
+        if (renWin->isPickerActivated()) {
+            renWin->hideSelectedCells();
+        } else {
+            ui->actHideReverse->setDisabled(true);
+            ui->innerTool->show();
+            ui->innerTool->setCurrentIndex(1);
+            renWin->pickupCells(true);
+        }
+    });
+    /*  extract selection  */
+    connect(ui->btnExtractCellCancel, &QPushButton::clicked, ui->innerTool,
+            [&]() {
+                ui->innerTool->setCurrentIndex(0);
+                renWin->turnOffPickMode();
+                ui->actHideSelect->setDisabled(false);
+            });
+    connect(ui->btnExtractCellOk, &QPushButton::clicked, ui->innerTool, [&]() {
+        renWin->showSelectedCells();
+        ui->innerTool->setCurrentIndex(0);
+        ui->actHideSelect->setDisabled(false);
+    });
+    connect(ui->actHideReverse, &QAction::triggered, renWin, [&]() {
+        //  get the status of the picker
+        if (renWin->isPickerActivated()) {
+            renWin->showSelectedCells();
+        } else {
+            ui->actHideSelect->setDisabled(true);
+            ui->innerTool->setCurrentIndex(2);
+            renWin->pickupCells(true);
+        }
+    });
+
+    /*  show complete model  */
     connect(ui->actShowAll, &QAction::triggered, renWin,
             [&]() { renWin->showCompleteModel(); });
 }

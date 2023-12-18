@@ -44,7 +44,6 @@
 #include <QList>
 #include <QObject>
 #include <QWidget>
-#include <ctime>
 #include <sstream>
 
 #include "camera.h"
@@ -153,6 +152,16 @@ public:
 
     /*  showSelectedCells: show the cells selected by the picker  */
     void showSelectedCells();
+
+    /*  isPickerActivated: get the status of the picker that is actived or not?
+     *  @return  the picker status  */
+    bool isPickerActivated() { return pick->isPickerActivated(); }
+
+    /*  turnOffPickMode: turn off the picker mode  */
+    void turnOffPickMode() {
+        pick->turnOff();
+        interact->SetInteractorStyle(initStyle);
+    };
 
 public:
     /*  showPointField: display the information with respect to the nodes,

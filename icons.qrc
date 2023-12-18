@@ -95,5 +95,9 @@
         <file>icons/camera.png</file>
         <file>icons/selection_mesh.png</file>
         <file>icons/selection_node.png</file>
+        <file>icons/pacnano_light.png</file>
+        <file>icons/pacnano_word.png</file>
+        <file>icons/accepted.png</file>
+        <file>icons/rejected.png</file>
     </qresource>
 </RCC>
