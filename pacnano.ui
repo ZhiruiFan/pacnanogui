@@ -462,7 +462,7 @@ QTreeView::branch:open:has-children:has-siblings  {
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <layout class="QVBoxLayout" name="verticalLayout_5">
         <property name="spacing">
          <number>0</number>
@@ -927,7 +927,7 @@ QTreeView::branch:open:has-children:has-siblings  {
              <enum>QFrame::Raised</enum>
             </property>
             <property name="currentIndex">
-             <number>1</number>
+             <number>0</number>
             </property>
             <widget class="QWidget" name="vpProject">
              <layout class="QVBoxLayout" name="verticalLayout_22">
@@ -1187,6 +1187,9 @@ QTreeView::branch:open:has-children:has-siblings  {
                 </property>
                 <property name="autoRaise">
                  <bool>true</bool>
+                </property>
+                <property name="arrowType">
+                 <enum>Qt::NoArrow</enum>
                 </property>
                </widget>
               </item>
@@ -2808,7 +2811,7 @@ QTreeView::branch:open:has-children:has-siblings  {
      <x>0</x>
      <y>0</y>
      <width>1161</width>
-     <height>23</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -2937,15 +2940,74 @@ QTreeView::branch:open:has-children:has-siblings  {
     <property name="title">
      <string>Postprocess</string>
     </property>
+    <widget class="QMenu" name="menuCountour">
+     <property name="title">
+      <string>Countour</string>
+     </property>
+     <addaction name="actionManage"/>
+     <addaction name="actionCreate"/>
+     <addaction name="actionEdit"/>
+     <addaction name="actionRename"/>
+     <addaction name="actionDelete_2"/>
+    </widget>
+    <widget class="QMenu" name="menuSymbol">
+     <property name="title">
+      <string>Symbol</string>
+     </property>
+     <addaction name="actionManage_2"/>
+     <addaction name="actionCreate_2"/>
+     <addaction name="actionEdit_2"/>
+     <addaction name="actionRename_4"/>
+     <addaction name="actionDelete_4"/>
+    </widget>
+    <widget class="QMenu" name="menuStream">
+     <property name="title">
+      <string>Stream</string>
+     </property>
+     <addaction name="actionManage_3"/>
+     <addaction name="actionCreate_3"/>
+     <addaction name="actionEdit_3"/>
+     <addaction name="actionRename_5"/>
+     <addaction name="actionDelete_5"/>
+    </widget>
+    <widget class="QMenu" name="menuHistory">
+     <property name="title">
+      <string>History</string>
+     </property>
+     <addaction name="actionObjective_2"/>
+     <addaction name="actionConstraint"/>
+     <addaction name="actionObjective_Constraints"/>
+     <addaction name="actionCell_data"/>
+    </widget>
+    <widget class="QMenu" name="menuColored_map">
+     <property name="title">
+      <string>Colored map</string>
+     </property>
+     <addaction name="actionManage_4"/>
+     <addaction name="actionCreate_4"/>
+     <addaction name="actionEdit_4"/>
+     <addaction name="actionRename_6"/>
+     <addaction name="actionDelete_6"/>
+    </widget>
+    <widget class="QMenu" name="menuThreshold">
+     <property name="title">
+      <string>Threshold</string>
+     </property>
+     <addaction name="actionManage_5"/>
+     <addaction name="actionCreate_5"/>
+     <addaction name="actionEdit_5"/>
+     <addaction name="actionRename_7"/>
+     <addaction name="actionDelete_7"/>
+    </widget>
     <addaction name="actPostManager"/>
-    <addaction name="actCreatePost"/>
     <addaction name="separator"/>
-    <addaction name="actionCountour"/>
-    <addaction name="actionSymbol"/>
-    <addaction name="actionStream"/>
+    <addaction name="menuColored_map"/>
+    <addaction name="menuCountour"/>
+    <addaction name="menuSymbol"/>
+    <addaction name="menuStream"/>
+    <addaction name="menuThreshold"/>
     <addaction name="separator"/>
-    <addaction name="actionDelete"/>
-    <addaction name="actionRename_2"/>
+    <addaction name="menuHistory"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -2997,17 +3059,23 @@ QTreeView::branch:open:has-children:has-siblings  {
     <addaction name="actShowGeom"/>
     <addaction name="actShowMesh"/>
     <addaction name="separator"/>
-    <addaction name="actHideSelect"/>
-    <addaction name="actHideReverse"/>
-    <addaction name="actShowAll"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
      <string>Tools</string>
     </property>
     <addaction name="actConfigCamera"/>
+    <addaction name="separator"/>
     <addaction name="actNodeSelect"/>
     <addaction name="actElemSelect"/>
+    <addaction name="separator"/>
+    <addaction name="actHideSelect"/>
+    <addaction name="actHideReverse"/>
+    <addaction name="actShowAll"/>
+    <addaction name="separator"/>
+    <addaction name="actionExtract_geometry"/>
+    <addaction name="actionSmooth"/>
+    <addaction name="actionReflect"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -3918,33 +3986,6 @@ QTreeView::branch:open:has-children:has-siblings  {
     <string>Lock</string>
    </property>
   </action>
-  <action name="actionCountour">
-   <property name="icon">
-    <iconset resource="icons.qrc">
-     <normaloff>:/icons/countour.png</normaloff>:/icons/countour.png</iconset>
-   </property>
-   <property name="text">
-    <string>Countour</string>
-   </property>
-  </action>
-  <action name="actionSymbol">
-   <property name="icon">
-    <iconset resource="icons.qrc">
-     <normaloff>:/icons/Symbolplot.png</normaloff>:/icons/Symbolplot.png</iconset>
-   </property>
-   <property name="text">
-    <string>Symbol</string>
-   </property>
-  </action>
-  <action name="actionStream">
-   <property name="icon">
-    <iconset resource="icons.qrc">
-     <normaloff>:/icons/stream.png</normaloff>:/icons/stream.png</iconset>
-   </property>
-   <property name="text">
-    <string>Stream</string>
-   </property>
-  </action>
   <action name="actMatCreate">
    <property name="icon">
     <iconset resource="icons.qrc">
@@ -4010,7 +4051,7 @@ QTreeView::branch:open:has-children:has-siblings  {
      <normaloff>:/icons/setting.png</normaloff>:/icons/setting.png</iconset>
    </property>
    <property name="text">
-    <string>Manager</string>
+    <string>Configuration</string>
    </property>
   </action>
   <action name="actionDelete">
@@ -4228,6 +4269,171 @@ QTreeView::branch:open:has-children:has-siblings  {
    </property>
    <property name="text">
     <string>Config camera</string>
+   </property>
+  </action>
+  <action name="actionManage">
+   <property name="text">
+    <string>Manage</string>
+   </property>
+  </action>
+  <action name="actionCreate">
+   <property name="text">
+    <string>Create</string>
+   </property>
+  </action>
+  <action name="actionEdit">
+   <property name="text">
+    <string>Edit</string>
+   </property>
+  </action>
+  <action name="actionDelete_2">
+   <property name="text">
+    <string>Delete</string>
+   </property>
+  </action>
+  <action name="actionRename">
+   <property name="text">
+    <string>Rename</string>
+   </property>
+  </action>
+  <action name="actionManage_2">
+   <property name="text">
+    <string>Manage</string>
+   </property>
+  </action>
+  <action name="actionCreate_2">
+   <property name="text">
+    <string>Create</string>
+   </property>
+  </action>
+  <action name="actionEdit_2">
+   <property name="text">
+    <string>Edit</string>
+   </property>
+  </action>
+  <action name="actionRename_4">
+   <property name="text">
+    <string>Rename</string>
+   </property>
+  </action>
+  <action name="actionDelete_4">
+   <property name="text">
+    <string>Delete</string>
+   </property>
+  </action>
+  <action name="actionManage_3">
+   <property name="text">
+    <string>Manage</string>
+   </property>
+  </action>
+  <action name="actionCreate_3">
+   <property name="text">
+    <string>Create</string>
+   </property>
+  </action>
+  <action name="actionEdit_3">
+   <property name="text">
+    <string>Edit</string>
+   </property>
+  </action>
+  <action name="actionRename_5">
+   <property name="text">
+    <string>Rename</string>
+   </property>
+  </action>
+  <action name="actionDelete_5">
+   <property name="text">
+    <string>Delete</string>
+   </property>
+  </action>
+  <action name="actionExtract_geometry">
+   <property name="text">
+    <string>Extract geometry</string>
+   </property>
+  </action>
+  <action name="actionSmooth">
+   <property name="text">
+    <string>Smooth</string>
+   </property>
+  </action>
+  <action name="actionReflect">
+   <property name="text">
+    <string>Reflect </string>
+   </property>
+  </action>
+  <action name="actionThreshold">
+   <property name="text">
+    <string>Threshold</string>
+   </property>
+  </action>
+  <action name="actionObjective_2">
+   <property name="text">
+    <string>Optimization</string>
+   </property>
+  </action>
+  <action name="actionConstraint">
+   <property name="text">
+    <string>Analysis</string>
+   </property>
+  </action>
+  <action name="actionObjective_Constraints">
+   <property name="text">
+    <string>Point data</string>
+   </property>
+  </action>
+  <action name="actionManage_4">
+   <property name="text">
+    <string>Manage</string>
+   </property>
+  </action>
+  <action name="actionCreate_4">
+   <property name="text">
+    <string>Create</string>
+   </property>
+  </action>
+  <action name="actionEdit_4">
+   <property name="text">
+    <string>Edit</string>
+   </property>
+  </action>
+  <action name="actionRename_6">
+   <property name="text">
+    <string>Rename</string>
+   </property>
+  </action>
+  <action name="actionDelete_6">
+   <property name="text">
+    <string>Delete</string>
+   </property>
+  </action>
+  <action name="actionManage_5">
+   <property name="text">
+    <string>Manage</string>
+   </property>
+  </action>
+  <action name="actionCreate_5">
+   <property name="text">
+    <string>Create</string>
+   </property>
+  </action>
+  <action name="actionEdit_5">
+   <property name="text">
+    <string>Edit</string>
+   </property>
+  </action>
+  <action name="actionRename_7">
+   <property name="text">
+    <string>Rename</string>
+   </property>
+  </action>
+  <action name="actionDelete_7">
+   <property name="text">
+    <string>Delete</string>
+   </property>
+  </action>
+  <action name="actionCell_data">
+   <property name="text">
+    <string>Cell data</string>
    </property>
   </action>
  </widget>
