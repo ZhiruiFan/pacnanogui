@@ -132,6 +132,9 @@ void Viewer::setInputData(Field*& input) {
 
     /*  update the flag  */
     isAssigedField = true;
+
+    /*  initialize the filed  */
+    field->checkAnchor();
 };
 
 /*  ############################################################################
@@ -269,10 +272,14 @@ void Viewer::showPointField(const int& index, const int& comp) {
         //  determine the name of the components
         name << dtOld->GetName() << ": total";
     }
+
     //  assign the name of the components
     dtCur->SetName(name.str().c_str());
     //  set the current displayed data
     field->pointData->SetScalars(dtCur);
+
+    /*  Update the warpper  */
+    field->updateAnchor(100.0, 0.01, 1.0);
 
     /*  Create the LOOKUP table  */
     lut->SetHueRange(0.667, 0.0);
@@ -288,20 +295,22 @@ void Viewer::showPointField(const int& index, const int& comp) {
         isScalarBarPlayed = true;
     }
 
-    /*  Update the warpper  */
-    field->updateAnchor(200.0, 0.0, 1.0);
-
     /*  setup the mapper  */
-    dtMap->SetInputConnection(field->warp->GetOutputPort());
+    dtMap->SetInputConnection(field->threshold->GetOutputPort());
     dtMap->SetScalarVisibility(1);
     dtMap->SetScalarModeToUsePointData();
     dtMap->SetScalarRange(dtCur->GetRange());
     dtMap->SetLookupTable(lut);
     dtMap->SelectColorArray(dtCur->GetName());
 
+    std::cout << field->warp->GetOutput()->GetNumberOfCells() << "\n";
+    std::cout << field->threshold->GetOutput()->GetNumberOfCells() << "\n";
+    int a = field->warp->GetOutput()->GetNumberOfCells();
+    int b = field->threshold->GetOutput()->GetNumberOfCells();
+
     /*  Setup the actor  */
     actor->SetMapper(dtMap);
-    actor->GetProperty()->SetEdgeVisibility(field->ifMeshed);
+    actor->GetProperty()->SetEdgeVisibility(0);
     actor->GetProperty()->SetLineWidth(0.0);
     render->AddActor2D(scalarBar);
 

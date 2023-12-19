@@ -79,18 +79,25 @@ bool Field::checkAnchor() {
         }
     }
     /*  check the warping anchor  */
-    return idx < numPointField ? true : false;
+    if (idxU >= numPointField)
+        return false;
+    else
+        updateWarper(warpScale);
 
     /*  extract the anchor of the threshold  */
     numCellField = cellData->GetNumberOfArrays();
     for (idx = 0; idx < numCellField; ++idx) {
-        if (std::strcmp(pointData->GetArrayName(idx), "DEN") == 0) {
+        if (std::strcmp(cellData->GetArrayName(idx), "Var-0") == 0) {
             idxDen = idx;
             break;
         }
     }
     /*  check the threshold status  */
-    return idx < numCellField ? true : false;
+    if (idxDen >= numCellField)
+        return false;
+    else
+        updateThreshold(lowerLimit, upperLimit);
+    return true;
 }
 
 /*  ============================================================================
@@ -105,6 +112,10 @@ void Field::updateAnchor(const double& scale, const double& lower,
 
     /*  update the threshold  */
     updateThreshold(lower, upper);
+    int b            = warp->GetOutput()->GetNumberOfCells();
+    int a            = threshold->GetOutput()->GetNumberOfCells();
+    const char* name = cellData->GetArrayName(idxDen);
+    int c            = 0;
 }
 
 /*  ############################################################################
@@ -113,17 +124,19 @@ void Field::updateAnchor(const double& scale, const double& lower,
  *  @param  scale: the warping scale factor  */
 void Field::updateWarper(const double& scale) {
     /*  check the warping scale is changed  */
-    if (warpScale != scale) {
-        /*  update the warping scale  */
-        warpScale = scale;
+    /*  update the warping scale  */
+    warpScale = scale;
 
-        /*  set the anchor of the warpper  */
-        warp->SetInputArrayToProcess(0, 0, 0,
-                                     vtkDataObject::FIELD_ASSOCIATION_POINTS,
-                                     pointData->GetArray(idxU)->GetName());
-        warp->SetScaleFactor(warpScale);
-        warp->Update();
-    }
+    /*  set the anchor of the warpper  */
+    warp->SetInputArrayToProcess(0, 0, 0,
+                                 vtkDataObject::FIELD_ASSOCIATION_POINTS,
+                                 pointData->GetArray(idxU)->GetName());
+    warp->SetScaleFactor(warpScale);
+    warp->Update();
+    int b            = warp->GetOutput()->GetNumberOfCells();
+    int a            = threshold->GetOutput()->GetNumberOfCells();
+    const char* name = cellData->GetArrayName(idxDen);
+    int c            = 0;
 }
 
 /*  ============================================================================
@@ -133,18 +146,21 @@ void Field::updateWarper(const double& scale) {
  *  @param  upper: the higher limit of the threshold  */
 void Field::updateThreshold(const double& lower, const double& upper) {
     /*  check the limits is updated or not  */
-    if (upperLimit != upper || lower == lowerLimit) {
-        /*  update the lower and upper limits  */
-        lowerLimit = lower;
-        upperLimit = upper;
+    /*  update the lower and upper limits  */
+    lowerLimit = lower;
+    upperLimit = upper;
 
-        /*  update the anchor the threshold  */
-        threshold->SetInputConnection(warp->GetOutputPort());
-        threshold->SetInputArrayToProcess(
-            0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_CELLS,
-            cellData->GetArray(idxDen)->GetName());
-        threshold->SetLowerThreshold(lowerLimit);
-        threshold->SetUpperThreshold(upperLimit);
-        threshold->Update();
-    }
+    /*  update the anchor the threshold  */
+    threshold->SetInputConnection(warp->GetOutputPort());
+    threshold->SetInputData(warp->GetOutput());
+    threshold->SetInputArrayToProcess(0, 0, 0,
+                                      vtkDataObject::FIELD_ASSOCIATION_CELLS,
+                                      cellData->GetArray(idxDen)->GetName());
+    threshold->SetLowerThreshold(lowerLimit);
+    // threshold->SetUpperThreshold(upperLimit);
+    threshold->Update();
+    int b            = warp->GetOutput()->GetNumberOfCells();
+    int a            = threshold->GetOutput()->GetNumberOfCells();
+    const char* name = cellData->GetArrayName(idxDen);
+    int c            = 0;
 }
