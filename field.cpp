@@ -112,10 +112,6 @@ void Field::updateAnchor(const double& scale, const double& lower,
 
     /*  update the threshold  */
     updateThreshold(lower, upper);
-    int b            = warp->GetOutput()->GetNumberOfCells();
-    int a            = threshold->GetOutput()->GetNumberOfCells();
-    const char* name = cellData->GetArrayName(idxDen);
-    int c            = 0;
 }
 
 /*  ############################################################################
@@ -133,10 +129,6 @@ void Field::updateWarper(const double& scale) {
                                  pointData->GetArray(idxU)->GetName());
     warp->SetScaleFactor(warpScale);
     warp->Update();
-    int b            = warp->GetOutput()->GetNumberOfCells();
-    int a            = threshold->GetOutput()->GetNumberOfCells();
-    const char* name = cellData->GetArrayName(idxDen);
-    int c            = 0;
 }
 
 /*  ============================================================================
@@ -159,8 +151,4 @@ void Field::updateThreshold(const double& lower, const double& upper) {
     threshold->SetLowerThreshold(lowerLimit);
     // threshold->SetUpperThreshold(upperLimit);
     threshold->Update();
-    int b            = warp->GetOutput()->GetNumberOfCells();
-    int a            = threshold->GetOutput()->GetNumberOfCells();
-    const char* name = cellData->GetArrayName(idxDen);
-    int c            = 0;
 }

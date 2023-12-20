@@ -94,6 +94,9 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     originCamera = vtkCamera::New();
     originCamera->DeepCopy(render->GetActiveCamera());
     showCameraAxonometric();
+
+    /*  source for viewer  */
+    isShownField = true;
 }
 
 /*  ============================================================================
@@ -128,7 +131,8 @@ void Viewer::setInputData(Field*& input) {
     pick->setField(input);
 
     /*  copy the current unstructured data for operation  */
-    ugridCur->DeepCopy(field->ugrid);
+    // ugridCur->DeepCopy(field->ugrid);
+    portCur = field->port;
 
     /*  update the flag  */
     isAssigedField = true;
@@ -144,8 +148,9 @@ void Viewer::showCompleteModel() {
     /*  check the status  */
     if (isModelLoaded) {
         /*  reset the unstructured grid to original  */
-        ugridCur->DeepCopy(field->ugrid);
-        pick->setInputData(ugridCur);
+        // ugridCur->DeepCopy(field->ugrid);
+        // pick->setInputData(ugridCur);
+        pick->setInputData(field->port);
         cellIdsAll->Initialize();
 
         /*  show the field data as current configuration  */
@@ -187,7 +192,8 @@ void Viewer::showModel() {
         configStatusBar(field->name, info);
 
         /*  set the data to the viewer  */
-        dtMap->SetInputData(ugridCur);
+        // dtMap->SetInputData(ugridCur);
+        dtMap->SetInputConnection(portCur);
         dtMap->ScalarVisibilityOff();
 
         /*  configure the actor  */
@@ -303,10 +309,8 @@ void Viewer::showPointField(const int& index, const int& comp) {
     dtMap->SetLookupTable(lut);
     dtMap->SelectColorArray(dtCur->GetName());
 
-    std::cout << field->warp->GetOutput()->GetNumberOfCells() << "\n";
-    std::cout << field->threshold->GetOutput()->GetNumberOfCells() << "\n";
-    int a = field->warp->GetOutput()->GetNumberOfCells();
-    int b = field->threshold->GetOutput()->GetNumberOfCells();
+    /*  update the port  */
+    portCur = field->threshold->GetOutputPort();
 
     /*  Setup the actor  */
     actor->SetMapper(dtMap);
@@ -338,15 +342,20 @@ void Viewer::pickupCells(bool mode) {
         configStatusBar(field->name, info);
 
         /*  set the data to the viewer  */
-        dtMap->SetInputData(ugridCur);
-        dtMap->ScalarVisibilityOff();
+        // dtMap->SetInputData(ugridCur);
+        // dtMap->SetInputConnection(portCur);
+        // dtMap->ScalarVisibilityOff();
 
-        /*  configure the actor  */
-        actor->GetProperty()->SetColor(colors->GetColor3d("cyan").GetData());
-        actor->SetMapper(dtMap);
+        // /*  configure the actor  */
+        // actor->GetProperty()->SetColor(colors->GetColor3d("cyan").GetData());
+        // actor->SetMapper(dtMap);
 
         /*  create the picker  */
-        pick->setInputData(ugridCur);
+        // pick->setInputData(ugridCur);
+        pickSource = isShownField ? field->warp->GetOutputPort() : field->port;
+        pick->setSourcePort(pickSource);
+
+        pick->setInputData(portCur);
         pick->setRenderInfo(render);
         //  determine the selection mode
         if (mode) {
@@ -378,9 +387,13 @@ void Viewer::hideSelectedCells() {
         extractor->SetInputData(1, cellSelector);
         extractor->Update();
 
+        /*  update the current port  */
+        portCur = extractor->GetOutputPort();
+
         /*  get the unstructured grid of the unselected cells  */
         ugridCur->ShallowCopy(extractor->GetOutput());
-        dtMap->SetInputData(ugridCur);
+        // dtMap->SetInputData(ugridCur);
+        dtMap->SetInputConnection(portCur);
         pick->turnOff();
         interact->SetInteractorStyle(initStyle);
 
@@ -444,9 +457,13 @@ void Viewer::showSelectedCells() {
         extractor->SetInputData(1, cellSelector);
         extractor->Update();
 
+        /*  update the current port  */
+        portCur = extractor->GetOutputPort();
+
         /*  get the unstructured grid of the unselected cells  */
         ugridCur->ShallowCopy(extractor->GetOutput());
-        dtMap->SetInputData(ugridCur);
+        // dtMap->SetInputData(ugridCur);
+        dtMap->SetInputConnection(portCur);
         pick->turnOff();
         interact->SetInteractorStyle(initStyle);
 

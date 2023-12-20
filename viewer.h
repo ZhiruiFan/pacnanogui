@@ -63,6 +63,9 @@ private:
     bool isAssigedField;                           // field assignment flag
     bool isModelLoaded;                            // has model loaded
 
+    vtkAlgorithmOutput* portCur;                   // current port
+    vtkUnstructuredGrid* ugridCur;                 // current ugrid
+
     Camera* camera;                                // camera configuration
 
     QVTKOpenGLNativeWidget* win;                   // main window
@@ -81,8 +84,9 @@ private:
     vtkTextActor* status;                          // status bar
     std::stringstream time;                        // current time
 
+    bool isShownField;                             // flag for source
+    vtkAlgorithmOutput* pickSource;                // source for picking
     Pick* pick;                                    // pick object
-    vtkUnstructuredGrid* ugridCur;                 // current ugrid
     vtkRenderWindowInteractor* interact;           // interactor
     vtkInteractorStyleTrackballCamera* initStyle;  // initial style
 

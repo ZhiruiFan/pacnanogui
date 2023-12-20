@@ -17,6 +17,7 @@
 #define PICK_H
 /*  HEAD FILES FOR VTK  */
 #include <vtkActor.h>
+#include <vtkAlgorithm.h>
 #include <vtkAppendFilter.h>
 #include <vtkAreaPicker.h>
 #include <vtkCellLocator.h>
@@ -102,6 +103,8 @@ public:
     /*  setInputData: assign the unstructured grid data to the current object
      *  @param  input: the unstructured grid be operated  */
     void setInputData(vtkUnstructuredGrid* input);
+    void setInputData(vtkAlgorithmOutput* port);
+    void setSourcePort(vtkAlgorithmOutput* port);
 
     /*  setRenderInfo: set the render window and renderer
      *  @param  renderWindow: the window to show the model

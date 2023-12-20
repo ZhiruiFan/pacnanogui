@@ -91,6 +91,31 @@ void Pick::setInputData(vtkUnstructuredGrid* input) {
     cellExtracted->Initialize();
 }
 
+void Pick::setInputData(vtkAlgorithmOutput* port) {
+    /* reset the id array of selected cells  */
+    cellIds->Initialize();
+    cellExtracted->Initialize();
+
+    /*  set the input of the cell extractor  */
+    extractor->SetInputConnection(0, idFilter->GetOutputPort());
+    extractGeo->SetInputConnection(port);
+}
+
+void Pick::setSourcePort(vtkAlgorithmOutput* port) {
+    /*  initialize the id filter  */
+    idFilter->SetInputConnection(port);
+    idFilter->SetCellIdsArrayName("All_cells");
+    idFilter->SetPointIdsArrayName("All_nodes");
+    idFilter->Update();
+
+    /*  initialize the cell locator  */
+    locator->SetDataSet(idFilter->GetOutput());
+    locator->BuildLocator();
+
+    /*  set the input of the cell extractor  */
+    extractor->SetInputConnection(0, idFilter->GetOutputPort());
+}
+
 /*  ============================================================================
  *  setRenderInfo: set the render window and renderer */
 void Pick::setRenderInfo(vtkRenderer* renderer) {
@@ -263,7 +288,8 @@ void Pick::showSelectedCells() {
     cellExtracted->ShallowCopy(extractor->GetOutput());
 
     /*  assign the extracted cells to the mapper  */
-    selectMap->SetInputData(cellExtracted);
+    // selectMap->SetInputData(cellExtracted);
+    selectMap->SetInputConnection(extractor->GetOutputPort());
     selectActor->SetMapper(selectMap);
 
     /*  configure the renderer property  */
