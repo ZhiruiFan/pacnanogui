@@ -43,18 +43,16 @@ public:
 
     vtkXMLUnstructuredGridReader* reader;  // reader of the vtu file
     vtkUnstructuredGrid* ugrid;            // grid of the FEM model
-    vtkAlgorithmOutput* port;              // output port of vtu file
+    vtkAlgorithmOutput* portAll;           // complete port of vtu file
+    vtkAlgorithmOutput* portCur;           // current port
 
     vtkPointData* pointData;               // point data of the vtu file
     int idxU;                              // index of the displacement field
     vtkWarpVector* warp;                   // warper of the FEM mdoel
-    double warpScale;                      // warp scale
 
     vtkThreshold* threshold;               // threshold of cell data
     vtkCellData* cellData;                 // cell data of vtu file
     int idxDen;                            // index of element density
-    double lowerLimit;                     // lower limit of the threshold
-    double upperLimit;                     // upper limit of the threshold
 
 public:
     /*  ########################################################################
@@ -70,6 +68,9 @@ public:
      *  @return  the checked status, ture for sucessed, otherwise failed  */
     bool checkAnchor();
 
+    /*  setInputConnection: set the input port to show the field variables  */
+    void setInputConnection(vtkAlgorithmOutput* port) { portCur = port; }
+
     /*  updateAnchor: update the anchor field
      *  @param  scale: the warping scale
      *  @param  lower: the lower limit of the threshold
@@ -78,18 +79,6 @@ public:
                       const double& upper);
 
 private:
-    /*  ########################################################################
-     *  updateWarper: update the configuration of the warper, which is used to
-     *  show the deformed configuration of the FEM model
-     *  @param  scale: the warping scale  */
-    void updateWarper(const double& scale);
-
-    /*  updateThreshold: update the threshold according to the optimized element
-     *  density, i.e., the cells not in the given limits will be hiden
-     *  @param  lower: the lower limit of the threshold
-     *  @param  upper: the upper limit of the threshold  */
-    void updateThreshold(const double& lower, const double& higher);
-
     /*  createNodalSet: create the node set using the given node sequence or by
      *  selecting from the viewerport  */
     void createNodalSet(double*& seq);

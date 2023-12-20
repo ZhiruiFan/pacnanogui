@@ -36,31 +36,37 @@ Field::Field(QString& _name) {
 
     /*  read the field data  */
     ugrid     = reader->GetOutput();
-    port      = reader->GetOutputPort();
+    portAll   = reader->GetOutputPort();
     pointData = ugrid->GetPointData();
     cellData  = ugrid->GetCellData();
 
     /*  create the warpper object  */
-    warp      = vtkWarpVector::New();
-    warpScale = 200.0;
+    warp = vtkWarpVector::New();
     warp->SetInputData(ugrid);
 
     /*  create the threshold  */
-    threshold  = vtkThreshold::New();
-    lowerLimit = 0.0;
-    upperLimit = 1.0;
+    threshold = vtkThreshold::New();
 }
 
 /*  ============================================================================
  *  destructor: destroy the vtk related object, such as reader, ugrid, point
  *  data, cell data, port, set, warp and so on   */
 Field::~Field() {
-    port->Delete();
+    /*  delete the variables  */
+    portAll->Delete();
     cellData->Delete();
     pointData->Delete();
     warp->Delete();
     ugrid->Delete();
     reader->Delete();
+
+    /*  assign the variable to null  */
+    portAll   = nullptr;
+    portCur   = nullptr;
+    cellData  = nullptr;
+    pointData = nullptr;
+    ugrid     = nullptr;
+    reader    = nullptr;
 }
 
 /*  ============================================================================
@@ -79,10 +85,7 @@ bool Field::checkAnchor() {
         }
     }
     /*  check the warping anchor  */
-    if (idxU >= numPointField)
-        return false;
-    else
-        updateWarper(warpScale);
+    if (idxU >= numPointField) return false;
 
     /*  extract the anchor of the threshold  */
     numCellField = cellData->GetNumberOfArrays();
@@ -93,10 +96,9 @@ bool Field::checkAnchor() {
         }
     }
     /*  check the threshold status  */
-    if (idxDen >= numCellField)
-        return false;
-    else
-        updateThreshold(lowerLimit, upperLimit);
+    if (idxDen >= numCellField) return false;
+
+    /*  return successed  */
     return true;
 }
 
@@ -108,47 +110,20 @@ bool Field::checkAnchor() {
 void Field::updateAnchor(const double& scale, const double& lower,
                          const double& upper) {
     /*  update the warper  */
-    updateWarper(scale);
-
-    /*  update the threshold  */
-    updateThreshold(lower, upper);
-}
-
-/*  ############################################################################
- *  updateWarper: update the configuration of the warper, which is used to
- *  show the deformed configuration of the FEM model
- *  @param  scale: the warping scale factor  */
-void Field::updateWarper(const double& scale) {
-    /*  check the warping scale is changed  */
-    /*  update the warping scale  */
-    warpScale = scale;
-
-    /*  set the anchor of the warpper  */
     warp->SetInputArrayToProcess(0, 0, 0,
                                  vtkDataObject::FIELD_ASSOCIATION_POINTS,
                                  pointData->GetArray(idxU)->GetName());
-    warp->SetScaleFactor(warpScale);
+    warp->SetInputConnection(portCur);
+    warp->SetScaleFactor(scale);
     warp->Update();
-}
 
-/*  ============================================================================
- *  updateThreshold: update the threshold according to the optimized element
- *  density, i.e., the cells not in the given limits will be hiden
- *  @param  lower: the lower limit of the threshold
- *  @param  upper: the higher limit of the threshold  */
-void Field::updateThreshold(const double& lower, const double& upper) {
-    /*  check the limits is updated or not  */
-    /*  update the lower and upper limits  */
-    lowerLimit = lower;
-    upperLimit = upper;
-
-    /*  update the anchor the threshold  */
+    /*  update the threshold  */
     threshold->SetInputConnection(warp->GetOutputPort());
     threshold->SetInputData(warp->GetOutput());
     threshold->SetInputArrayToProcess(0, 0, 0,
                                       vtkDataObject::FIELD_ASSOCIATION_CELLS,
                                       cellData->GetArray(idxDen)->GetName());
-    threshold->SetLowerThreshold(lowerLimit);
-    // threshold->SetUpperThreshold(upperLimit);
+    threshold->SetLowerThreshold(lower);
+    threshold->SetUpperThreshold(upper);
     threshold->Update();
 }

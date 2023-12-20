@@ -302,7 +302,8 @@ void Viewer::showPointField(const int& index, const int& comp) {
     }
 
     /*  setup the mapper  */
-    dtMap->SetInputConnection(field->threshold->GetOutputPort());
+    dtMap->SetInputConnection(portCur);
+    /*  set the anchor of the warpper  */
     dtMap->SetScalarVisibility(1);
     dtMap->SetScalarModeToUsePointData();
     dtMap->SetScalarRange(dtCur->GetRange());
