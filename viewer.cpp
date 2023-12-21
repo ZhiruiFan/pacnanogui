@@ -132,7 +132,7 @@ void Viewer::setInputData(Field*& input) {
 
     /*  copy the current unstructured data for operation  */
     // ugridCur->DeepCopy(field->ugrid);
-    portCur = field->port;
+    portCur = field->getInputPort();
 
     /*  update the flag  */
     isAssigedField = true;
@@ -150,7 +150,7 @@ void Viewer::showCompleteModel() {
         /*  reset the unstructured grid to original  */
         // ugridCur->DeepCopy(field->ugrid);
         // pick->setInputData(ugridCur);
-        pick->setInputData(field->port);
+        pick->setInputData(field->getInputPort());
         cellIdsAll->Initialize();
 
         /*  show the field data as current configuration  */
@@ -189,7 +189,7 @@ void Viewer::showModel() {
 
         /*  set the head information  */
         QString info = "Geometry of the current model";
-        configStatusBar(field->name, info);
+        configStatusBar(field->getPathName(), info);
 
         /*  set the data to the viewer  */
         // dtMap->SetInputData(ugridCur);
@@ -222,7 +222,7 @@ void Viewer::showMesh() {
 
         /*  set the head information  */
         QString info = "Geometry of the current model";
-        configStatusBar(field->name, info);
+        configStatusBar(field->getPathName(), info);
 
         /*  configure the actor  */
         actor->GetProperty()->SetColor(colors->GetColor3d("cyan").GetData());
@@ -235,23 +235,22 @@ void Viewer::showMesh() {
 }
 
 /*  ############################################################################
- *  showPointField: display the information with respect to the nodes,
- *  it includes the nodal displacement, reaction force and so on
- *  @param  field: the field that to be shown
- *  @param  idx: the index of the component in the data set
- *  @param  comp: the component index  */
-void Viewer::showPointField(const int& index, const int& comp) {
+ *  extractPointField: extract the specified point field from the original
+ *  vtu files
+ *  @param  idx: the index of point data that will be shown
+ *  @param  comp: the component of the point data that will be extracted  */
+void Viewer::extracPointField(const int& idx, const int& comp) {
     /*  assign the recorder  */
     recorder[0] = 2;
-    recorder[1] = index;
+    recorder[1] = idx;
     recorder[2] = comp;
 
     /*  Get the the field  */
-    vtkDataArray* dtOld = field->pointData->GetArray(index);
+    vtkDataArray* dtOld = field->getPointDataArray(idx);
 
     /*  Config the status bar  */
     QString info = "Plot the calculated field of the finite element model.";
-    configStatusBar(field->name, info);
+    configStatusBar(field->getPathName(), info);
 
     /*  Create the temporary variable to show field  */
     vtkDoubleArray* dtCur = vtkDoubleArray::New();
@@ -282,10 +281,10 @@ void Viewer::showPointField(const int& index, const int& comp) {
     //  assign the name of the components
     dtCur->SetName(name.str().c_str());
     //  set the current displayed data
-    field->pointData->SetScalars(dtCur);
+    field->addPointData(dtCur);
 
-    /*  Update the warpper  */
-    field->updateAnchor(100.0, 0.01, 1.0);
+    /*  set the input port of the field  */
+    portCur = field->getInputPort();
 
     /*  Create the LOOKUP table  */
     lut->SetHueRange(0.667, 0.0);
@@ -300,18 +299,36 @@ void Viewer::showPointField(const int& index, const int& comp) {
         render->AddActor(scalarBar);
         isScalarBarPlayed = true;
     }
+}
+
+/*  ############################################################################
+ *  showPointField: display the information with respect to the nodes,
+ *  it includes the nodal displacement, reaction force and so on
+ *  @param  field: the field that to be shown
+ *  @param  idx: the index of the component in the data set
+ *  @param  comp: the component index  */
+void Viewer::showPointField(const int& index, const int& comp) {
+    /*  get the name of the field  */
+    std::stringstream name;
+    name << field->getPointDataArrayName(index) << ":" << compName[comp];
+
+    /*  set the current port  */
+    field->setInputConnection(portCur);
+
+    /*  Update the warpper  */
+    field->updateAnchor(100.0, 0.01, 1.0);
 
     /*  setup the mapper  */
     dtMap->SetInputConnection(portCur);
     /*  set the anchor of the warpper  */
     dtMap->SetScalarVisibility(1);
     dtMap->SetScalarModeToUsePointData();
-    dtMap->SetScalarRange(dtCur->GetRange());
+    // dtMap->SetScalarRange(lut->GetRange());
     dtMap->SetLookupTable(lut);
-    dtMap->SelectColorArray(dtCur->GetName());
+    dtMap->SelectColorArray(name.str().c_str());
 
     /*  update the port  */
-    portCur = field->threshold->GetOutputPort();
+    portCur = field->getThresholdOutputPort();
 
     /*  Setup the actor  */
     actor->SetMapper(dtMap);
@@ -340,7 +357,7 @@ void Viewer::pickupCells(bool mode) {
     if (isModelLoaded) {
         /*  set the head information  */
         QString info = "Geometry of the current model";
-        configStatusBar(field->name, info);
+        configStatusBar(field->getPathName(), info);
 
         /*  set the data to the viewer  */
         // dtMap->SetInputData(ugridCur);
@@ -353,7 +370,8 @@ void Viewer::pickupCells(bool mode) {
 
         /*  create the picker  */
         // pick->setInputData(ugridCur);
-        pickSource = isShownField ? field->warp->GetOutputPort() : field->port;
+        pickSource = isShownField ? field->getThresholdOutputPort()
+                                  : field->getInputPort();
         pick->setSourcePort(pickSource);
 
         pick->setInputData(portCur);

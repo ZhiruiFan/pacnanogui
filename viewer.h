@@ -144,7 +144,9 @@ public:
      *  @param  field: the field variable to be shown  */
     void showMesh();
 
-    /*  pickCells: pick up the cells in the viewerport using the mouse box
+public:
+    /*  ########################################################################
+     *  pickCells: pick up the cells in the viewerport using the mouse box
      *  selection or mouse click method.
      *  @param  mode: node or element selection mode. If true, the node
      *                selection mode is activated. Otherwise, the element
@@ -168,6 +170,12 @@ public:
     };
 
 public:
+    /*  extractPointField: extract the specified point field from the original
+     *  vtu files
+     *  @param  idx: the index of point data that will be shown
+     *  @param  comp: the component of the point data that will be extracted  */
+    void extracPointField(const int& idx, const int& comp);
+
     /*  showPointField: display the information with respect to the nodes,
      *  it includes the nodal displacement, reaction force and so on
      *  @param  idx: the index of the component in the data set
@@ -187,5 +195,4 @@ private:
      *  @param  info: the model information that will be shown  */
     void configStatusBar(QString& file, QString& info);
 };
-
 #endif  // VIEWER_H

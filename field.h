@@ -20,6 +20,7 @@
 /*  INCLUDES  */
 #include <vtkAlgorithmOutput.h>
 #include <vtkCellData.h>
+#include <vtkDoubleArray.h>
 #include <vtkPointData.h>
 #include <vtkThreshold.h>
 #include <vtkUnstructuredGrid.h>
@@ -34,7 +35,7 @@
  *      displacement field, reaction force and so on), scalar field (material,
  *      Mises stress, design variables in Topology optimization and so on)  */
 class Field {
-public:
+private:
     QString name;                          // the name of the filed
     int numPointField;                     // number of nodal field variables
     int numCellField;                      // number of element filed variables
@@ -64,12 +65,21 @@ public:
      *  data, cell data, port, set, warp and so on   */
     ~Field();
 
+    /*  addPointData: add a new point data to the field
+     *  @param  pointDataArray: the array will be added to the field  */
+    void addPointData(vtkDoubleArray* data) { pointData->SetScalars(data); }
+
+    /*  getPointData: get the point data from the field  */
+    vtkDataArray* getPointData(const char* name) {
+        return pointData->GetArray(name);
+    }
+
     /*  checkAnchor: check the anchor filed variable is included or not?
      *  @return  the checked status, ture for sucessed, otherwise failed  */
     bool checkAnchor();
 
     /*  setInputConnection: set the input port to show the field variables  */
-    void setInputConnection(vtkAlgorithmOutput* port) { portCur = port; }
+    void setInputConnection(vtkAlgorithmOutput*& port) { portCur = port; }
 
     /*  updateAnchor: update the anchor field
      *  @param  scale: the warping scale
@@ -77,6 +87,42 @@ public:
      *  @param  upper: the uppre limit of the threshold  */
     void updateAnchor(const double& scale, const double& lower,
                       const double& upper);
+
+public:
+    /*  ########################################################################
+     *  getPathName: get the full path name of the field varaible  */
+    QString& getPathName() { return name; }
+
+    /*  getInputPort: get the initial port, i.e., the input port of the field
+     *  variables  */
+    vtkAlgorithmOutput* getInputPort() { return portAll; }
+
+    /*  getWarpOutputPort: get the output port of the warper  */
+    vtkAlgorithmOutput* getWarpOutputPort() { return warp->GetOutputPort(); }
+
+    /*  getThresholdOutputPort: get the output port of the threshold  */
+    vtkAlgorithmOutput* getThresholdOutputPort() {
+        return threshold->GetOutputPort();
+    }
+
+    /*  getPointDataArray: get the array amoung the all point data
+     *  @param  idx: the index amoung the all point data  */
+    vtkDataArray* getPointDataArray(const int& idx) {
+        return pointData->GetArray(idx);
+    }
+
+    /*  getCellDataArray: get the array amoung the all cell data
+     *  @param  idx: the index of the cell data array  */
+    vtkDataArray* getCellDataArray(const int& idx) {
+        return cellData->GetArray(idx);
+    }
+
+    /*  getPointDataArrayName: get the name of the point data according to the
+     *  specified index
+     *  @param  idx: the index of the point data  */
+    const char* getPointDataArrayName(const int& idx) {
+        return pointData->GetArrayName(idx);
+    }
 
 private:
     /*  createNodalSet: create the node set using the given node sequence or by
