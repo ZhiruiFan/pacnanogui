@@ -97,6 +97,10 @@ public:
      *  variables  */
     vtkAlgorithmOutput* getInputPort() { return portAll; }
 
+    /*  getInputData: get the initial unstructured grid of the field
+     *  @return  the ugrid  */
+    vtkUnstructuredGrid* getInputData() { return ugrid; }
+
     /*  getWarpOutputPort: get the output port of the warper  */
     vtkAlgorithmOutput* getWarpOutputPort() { return warp->GetOutputPort(); }
 

@@ -142,6 +142,29 @@ void Viewer::setInputData(Field*& input) {
 };
 
 /*  ############################################################################
+ *  update: update the displayed object using the current port  */
+void Viewer::update() {
+    /*  show the field data as current configuration  */
+    switch (recorder[0]) {
+        /*   show model   */
+        case 0: {
+            showModel();
+            break;
+        }
+        /*  show mesh  */
+        case 1: {
+            showMesh();
+            break;
+        }
+        /*  show point related field  */
+        case 2: {
+            showPointField(recorder[1], recorder[2]);
+            break;
+        }
+    }
+}
+
+/*  ############################################################################
  *  showCompleteModel: reset the unstructured grid data to the original and
  *      show the model as current configuration  */
 void Viewer::showCompleteModel() {
@@ -150,27 +173,10 @@ void Viewer::showCompleteModel() {
         /*  reset the unstructured grid to original  */
         // ugridCur->DeepCopy(field->ugrid);
         // pick->setInputData(ugridCur);
-        pick->setInputData(field->getInputPort());
+        portCur = field->getInputPort();
+        pick->setInputData(portCur);
         cellIdsAll->Initialize();
-
-        /*  show the field data as current configuration  */
-        switch (recorder[0]) {
-            /*   show model   */
-            case 0: {
-                showModel();
-                break;
-            }
-            /*  show mesh  */
-            case 1: {
-                showMesh();
-                break;
-            }
-            /*  show point related field  */
-            case 2: {
-                showPointField(recorder[1], recorder[2]);
-                break;
-            }
-        }
+        update();
     }
 }
 
@@ -208,6 +214,7 @@ void Viewer::showModel() {
 
         /*  update the model loaded flag  */
         isModelLoaded = true;
+        isShownField  = false;
     }
 }
 
@@ -235,11 +242,14 @@ void Viewer::showMesh() {
 }
 
 /*  ############################################################################
- *  extractPointField: extract the specified point field from the original
+ *  initPointField: initialize the specified point field from the original
  *  vtu files
  *  @param  idx: the index of point data that will be shown
  *  @param  comp: the component of the point data that will be extracted  */
-void Viewer::extracPointField(const int& idx, const int& comp) {
+void Viewer::initPointField(const int& idx, const int& comp) {
+    /*  update the flags  */
+    isShownField = true;
+
     /*  assign the recorder  */
     recorder[0] = 2;
     recorder[1] = idx;
@@ -283,9 +293,6 @@ void Viewer::extracPointField(const int& idx, const int& comp) {
     //  set the current displayed data
     field->addPointData(dtCur);
 
-    /*  set the input port of the field  */
-    portCur = field->getInputPort();
-
     /*  Create the LOOKUP table  */
     lut->SetHueRange(0.667, 0.0);
     lut->SetNumberOfTableValues(12);
@@ -299,6 +306,13 @@ void Viewer::extracPointField(const int& idx, const int& comp) {
         render->AddActor(scalarBar);
         isScalarBarPlayed = true;
     }
+
+    /*  set the input port of the field  */
+    portCur = field->getInputPort();
+    field->setInputConnection(portCur);
+    field->updateAnchor(100.0, 0.01, 1.0);
+    portCur = field->getThresholdOutputPort();
+    update();
 }
 
 /*  ############################################################################
@@ -312,23 +326,18 @@ void Viewer::showPointField(const int& index, const int& comp) {
     std::stringstream name;
     name << field->getPointDataArrayName(index) << ":" << compName[comp];
 
-    /*  set the current port  */
-    field->setInputConnection(portCur);
-
-    /*  Update the warpper  */
-    field->updateAnchor(100.0, 0.01, 1.0);
-
     /*  setup the mapper  */
     dtMap->SetInputConnection(portCur);
     /*  set the anchor of the warpper  */
     dtMap->SetScalarVisibility(1);
     dtMap->SetScalarModeToUsePointData();
-    // dtMap->SetScalarRange(lut->GetRange());
-    dtMap->SetLookupTable(lut);
     dtMap->SelectColorArray(name.str().c_str());
+    dtMap->SetLookupTable(lut);
+    std::cout << lut->GetRange()[0] << "\t" << lut->GetRange()[1] << "\n";
+    dtMap->SetScalarRange(lut->GetRange());
 
     /*  update the port  */
-    portCur = field->getThresholdOutputPort();
+    // portCur = field->getThresholdOutputPort();
 
     /*  Setup the actor  */
     actor->SetMapper(dtMap);
@@ -389,8 +398,8 @@ void Viewer::pickupCells(bool mode) {
 }
 
 /*  ############################################################################
- *  hideSelectedCells: hide the cells selected by the picker  */
-void Viewer::hideSelectedCells() {
+ *  hideCells: hide the cells selected by the picker  */
+void Viewer::hideCells() {
     /*  Get the picker status  */
     if (pick->isPickerActivated() && pick->isCellSelectionModeOn()) {
         cellIdsCur = pick->getSelectedCellIds();
@@ -417,13 +426,14 @@ void Viewer::hideSelectedCells() {
         interact->SetInteractorStyle(initStyle);
 
         /*  render the window  */
-        renWin->Render();
+        // renWin->Render();
+        update();
     }
 }
 
 /*  ============================================================================
- *  showSelectedCells: show the cells selected by the picker  */
-void Viewer::showSelectedCells() {
+ *  extractCells: show the cells selected by the picker  */
+void Viewer::extractCells() {
     /*  Get the picker status  */
     if (pick->isPickerActivated() && pick->isCellSelectionModeOn()) {
         /*  get the inverse of the selected cells  */
@@ -487,7 +497,8 @@ void Viewer::showSelectedCells() {
         interact->SetInteractorStyle(initStyle);
 
         /*  render the window  */
-        renWin->Render();
+        // renWin->Render();
+        update();
     }
 }
 

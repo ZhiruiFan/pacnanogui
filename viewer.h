@@ -153,11 +153,11 @@ public:
      *                selection mode is activated.  */
     void pickupCells(bool mode);
 
-    /*  hideSelectedCells: hide the cells selected by the picker  */
-    void hideSelectedCells();
+    /*  hideCells: hide the cells selected by the picker  */
+    void hideCells();
 
-    /*  showSelectedCells: show the cells selected by the picker  */
-    void showSelectedCells();
+    /*  extractCells: show the cells selected by the picker  */
+    void extractCells();
 
     /*  isPickerActivated: get the status of the picker that is actived or not?
      *  @return  the picker status  */
@@ -170,11 +170,12 @@ public:
     };
 
 public:
-    /*  extractPointField: extract the specified point field from the original
+    /*  ########################################################################
+     *  initPointField: initialize the specified point field from the original
      *  vtu files
      *  @param  idx: the index of point data that will be shown
      *  @param  comp: the component of the point data that will be extracted  */
-    void extracPointField(const int& idx, const int& comp);
+    void initPointField(const int& idx, const int& comp);
 
     /*  showPointField: display the information with respect to the nodes,
      *  it includes the nodal displacement, reaction force and so on
@@ -189,10 +190,14 @@ public:
     void showCellField(const int& idx);
 
 private:
-    /*  configure the status bar, which includes the system time, model
+    /*  ########################################################################
+     *  configure the status bar, which includes the system time, model
      *  information
      *  @param  file: the model that will be displayed
      *  @param  info: the model information that will be shown  */
     void configStatusBar(QString& file, QString& info);
+
+    /*  update: update the displayed object using the current port  */
+    void update();
 };
 #endif  // VIEWER_H

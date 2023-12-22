@@ -241,7 +241,7 @@ void pacnano::setupRenderWindow() {
     });
 
     connect(ui->actColorMap, &QAction::triggered, renWin,
-            [&]() { renWin->showPointField(0, 1); });
+            [&]() { renWin->initPointField(0, 0); });
 
     /*  connect to show geometry  */
     connect(ui->actShowMesh, &QAction::triggered, renWin,
@@ -265,14 +265,14 @@ void pacnano::setupRenderWindow() {
         ui->actHideReverse->setDisabled(false);
     });
     connect(ui->btnHideCellOk, &QPushButton::clicked, ui->innerTool, [&]() {
-        renWin->hideSelectedCells();
+        renWin->hideCells();
         ui->innerTool->setCurrentIndex(0);
         ui->actHideReverse->setDisabled(false);
     });
     connect(ui->actHideSelect, &QAction::triggered, renWin, [&]() {
         //  get the status of the picker
         if (renWin->isPickerActivated()) {
-            renWin->hideSelectedCells();
+            renWin->hideCells();
         } else {
             ui->actHideReverse->setDisabled(true);
             ui->innerTool->show();
@@ -288,14 +288,14 @@ void pacnano::setupRenderWindow() {
                 ui->actHideSelect->setDisabled(false);
             });
     connect(ui->btnExtractCellOk, &QPushButton::clicked, ui->innerTool, [&]() {
-        renWin->showSelectedCells();
+        renWin->extractCells();
         ui->innerTool->setCurrentIndex(0);
         ui->actHideSelect->setDisabled(false);
     });
     connect(ui->actHideReverse, &QAction::triggered, renWin, [&]() {
         //  get the status of the picker
         if (renWin->isPickerActivated()) {
-            renWin->showSelectedCells();
+            renWin->extractCells();
         } else {
             ui->actHideSelect->setDisabled(true);
             ui->innerTool->setCurrentIndex(2);

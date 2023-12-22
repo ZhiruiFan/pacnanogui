@@ -67,7 +67,7 @@ void Pick::setField(Field* input) {
     field = input;
 
     /*  initialize the id filter  */
-    idFilter->SetInputData(field->ugrid);
+    idFilter->SetInputData(field->getInputData());
     idFilter->SetCellIdsArrayName("All_cells");
     idFilter->SetPointIdsArrayName("All_nodes");
     idFilter->Update();
