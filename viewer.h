@@ -49,6 +49,7 @@
 #include "camera.h"
 #include "field.h"
 #include "pick.h"
+#include "post.h"
 
 /*  ############################################################################
  *  class Viewer: the class to define the visualization interface, which
@@ -60,13 +61,17 @@ class Viewer : public QWidget {
 private:
     Field* field;                                  // filed to be shown
     int recorder[3];                               // filed varaible recorder
-    bool isAssigedField;                           // field assignment flag
+    bool isModelCreated;                           // field assignment flag
     bool isModelLoaded;                            // has model loaded
+    bool isModelMode;                              // model mode is shown
+    bool isFieldMode;                              // field mode is shown
+    bool isPickHideModel;                          // will hide picked cells
+
+    Camera* camera;                                // camera configuration
+    Post* post;                                    // postprocessing config
 
     vtkAlgorithmOutput* portCur;                   // current port
     vtkUnstructuredGrid* ugridCur;                 // current ugrid
-
-    Camera* camera;                                // camera configuration
 
     QVTKOpenGLNativeWidget* win;                   // main window
     vtkGenericOpenGLRenderWindow* renWin;          // render window
@@ -84,8 +89,8 @@ private:
     vtkTextActor* status;                          // status bar
     std::stringstream time;                        // current time
 
-    bool isShownField;                             // flag for source
     vtkAlgorithmOutput* pickSource;                // source for picking
+    vtkThreshold* pickThreshold;                   // threshold for picker
     Pick* pick;                                    // pick object
     vtkRenderWindowInteractor* interact;           // interactor
     vtkInteractorStyleTrackballCamera* initStyle;  // initial style
@@ -114,6 +119,9 @@ public:
 
     /*  configCamera: show the dialog to configuration camera paramerters*/
     void configCamera() { camera->show(); }
+
+    /*  configPost: show the dialog to configure the postprocess  */
+    void configPost() { post->show(); };
 
     /*  showScalarBar: configure the style and show the scalar bar */
     void showScalarBar();
@@ -151,10 +159,10 @@ public:
      *  @param  mode: node or element selection mode. If true, the node
      *                selection mode is activated. Otherwise, the element
      *                selection mode is activated.  */
-    void pickupCells(bool mode);
+    void activePickMode(const bool& mode);
 
     /*  hideCells: hide the cells selected by the picker  */
-    void hideCells();
+    void handleCellPick(const bool& pickMode);
 
     /*  extractCells: show the cells selected by the picker  */
     void extractCells();

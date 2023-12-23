@@ -99,5 +99,7 @@
         <file>icons/pacnano_word.png</file>
         <file>icons/accepted.png</file>
         <file>icons/rejected.png</file>
+        <file>icons/load_database.png</file>
+        <file>icons/coloredMap.png</file>
     </qresource>
 </RCC>

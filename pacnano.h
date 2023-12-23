@@ -48,6 +48,16 @@ private:
     MatAssign *matAssign;    // material assignment
     QToolBar *innerToolBar;  // inner tool bar for user interaction
 
+private:
+    bool USE_MODEL_MODE;     // operation is for model
+    bool USE_FIELD_MODE;     // operation is for field variable
+
+    bool USE_CELL_MODE;      // pick up cells
+    bool USE_NODE_MODE;      // pick up points
+
+    bool USE_HIDE_MODE;      // operation is for hiding cells
+    bool USE_EXTRACT_MODE;   // operation is for extracting cells
+
 public:
     /*  constructor :
         create the pacnano mainwindow  */

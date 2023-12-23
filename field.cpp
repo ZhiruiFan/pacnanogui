@@ -16,8 +16,6 @@
 
 #include "field.h"
 
-#include <QDebug>
-
 /*  ############################################################################
  *  CLASS Field: the class to define the filed that will have a interaction with
  *      the Viewer object. It includes the nodes, elements, vector field (
@@ -40,12 +38,20 @@ Field::Field(QString& _name) {
     pointData = ugrid->GetPointData();
     cellData  = ugrid->GetCellData();
 
+    pickArray = vtkDoubleArray::New();
+    pickArray->SetNumberOfTuples(cellData->GetArray(0)->GetNumberOfTuples());
+    pickArray->SetNumberOfComponents(1);
+    pickArray->Fill(1.0);
+    pickArray->SetName("PickCells");
+    cellData->SetScalars(pickArray);
+
     /*  create the warpper object  */
     warp = vtkWarpVector::New();
     warp->SetInputData(ugrid);
 
     /*  create the threshold  */
-    threshold = vtkThreshold::New();
+    denFilter  = vtkThreshold::New();
+    pickFilter = vtkThreshold::New();
 }
 
 /*  ============================================================================
@@ -69,7 +75,7 @@ Field::~Field() {
     reader    = nullptr;
 }
 
-/*  ============================================================================
+/*  ############################################################################
  *  checkAnchor: check the anchor filed variable is included or not?
  *  @return  the checked status, ture for sucessed, otherwise failed  */
 bool Field::checkAnchor() {
@@ -113,17 +119,123 @@ void Field::updateAnchor(const double& scale, const double& lower,
     warp->SetInputArrayToProcess(0, 0, 0,
                                  vtkDataObject::FIELD_ASSOCIATION_POINTS,
                                  pointData->GetArray(idxU)->GetName());
-    warp->SetInputConnection(portCur);
+    warp->SetInputConnection(portAll);
     warp->SetScaleFactor(scale);
     warp->Update();
 
     /*  update the threshold  */
-    threshold->SetInputConnection(warp->GetOutputPort());
-    threshold->SetInputData(warp->GetOutput());
-    threshold->SetInputArrayToProcess(0, 0, 0,
+    denFilter->SetInputConnection(warp->GetOutputPort());
+    denFilter->SetInputData(warp->GetOutput());
+    denFilter->SetInputArrayToProcess(0, 0, 0,
                                       vtkDataObject::FIELD_ASSOCIATION_CELLS,
                                       cellData->GetArray(idxDen)->GetName());
-    threshold->SetLowerThreshold(lower);
-    threshold->SetUpperThreshold(upper);
-    threshold->Update();
+    denFilter->SetLowerThreshold(lower);
+    denFilter->SetUpperThreshold(upper);
+    denFilter->Update();
+}
+
+/*  ############################################################################
+ *  setWarpScale: set the coefficient of the warping scale
+ *  @param  scale: the warping scale  */
+void Field::setWarpScale(const double& scale) { warpScale = scale; }
+
+/*  ============================================================================
+ *  setLimitType: set the type of the threshold limination
+ *  @param  type: the type of the limit
+ *  @param  lower: the lower limit value
+ *  @param  upper: the upper limit value  */
+void Field::setLimits(const int& type, const double& lower,
+                      const double& upper) {
+    limitType  = type;
+    lowerLimit = lower;
+    upperLimit = upper;
+}
+
+/*  ############################################################################
+ *  setFieldRange: set the range of the field data in current viewerport
+ *  @param  range: the range of the field data  */
+void Field::setFieldRange(double*& range) {
+    dataRange[0] = range[0];
+    dataRange[1] = range[1];
+}
+
+/*  ============================================================================
+ *  getPointDataArray: get the point data from the field
+ *  @param  name: the name of the point data
+ *  @return  the point data with specified name  */
+vtkDataArray* Field::getPointDataArray(const char* name) {
+    return pointData->GetArray(name);
+}
+
+/*  ============================================================================
+ *  getPointDataArray: get the array amoung the all point data
+ *  @param  idx: the index amoung the all point data
+ *  @return  the point data with specified index  */
+vtkDataArray* Field::getPointDataArray(const int& idx) {
+    return pointData->GetArray(idx);
+}
+
+/*  ============================================================================
+ *  getPointDataArrayName: get the name of the point data according to the
+ *  specified index
+ *  @param  idx: the index of the point data
+ *  @return  the name of the point data array  */
+const char* Field::getPointDataArrayName(const int& idx) {
+    return pointData->GetArrayName(idx);
+}
+
+/*  ########################################################################
+ *  addPointData: add a new point data to the field
+ *  @param  pointDataArray: the array will be added to the field  */
+void Field::addPointData(vtkDoubleArray* data) { pointData->SetScalars(data); }
+
+/*  ############################################################################
+ *  setPickInputConnection: set the input port for picking cells
+ *  @cellIdsCur: the selected cells that will be used for  */
+void Field::setPickInputConnection(const bool isModelMode,
+                                   const bool isHideMode,
+                                   vtkIdTypeArray* cellIdsCur) {
+    /*  handling for the model or field mode  */
+    if (isModelMode) {
+        //  using the model mode
+        ugridCur  = ugrid;
+        portCur   = portAll;
+        pickArray = cellData->GetArray("PickCells");
+
+    } else {
+        /*  get the array of the picked array */
+        ugridCur  = denFilter->GetOutput();
+        portCur   = denFilter->GetOutputPort();
+        pickArray = denFilter->GetOutput()
+                        ->GetCellData()  //
+                        ->GetArray("PickCells");
+    }
+
+    /*  handling for selection mode  */
+    if (isHideMode) {
+        pickValue = 0.0;
+    } else {
+        pickValue = 1.0;
+        pickArray->Fill(0.0);
+    }
+
+    /*  assign the value with respect to the picked cells  */
+    for (vtkIdType i = 0; i < cellIdsCur->GetNumberOfValues(); ++i) {
+        pickArray->SetTuple1(cellIdsCur->GetValue(i), pickValue);
+    }
+
+    /*  perform the extracting or hiding operation  */
+    pickFilter->SetLowerThreshold(0.5);
+    pickFilter->SetInputConnection(portCur);
+    pickFilter->SetInputData(ugridCur);
+    pickFilter->SetInputArrayToProcess(
+        0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_CELLS, "PickCells");
+    pickFilter->Update();
+}
+
+/*  ============================================================================
+ *  getPickOutputPort: get the output port after picking operation
+ *  @return  the port of the pick filter  */
+vtkAlgorithmOutput* Field::getPickOutputPort() {
+    return pickFilter->GetOutputPort();
 }

@@ -2940,13 +2940,13 @@ QTreeView::branch:open:has-children:has-siblings  {
     <property name="title">
      <string>Postprocess</string>
     </property>
-    <addaction name="actionManager"/>
-    <addaction name="actPostManager"/>
+    <addaction name="actPostOpen"/>
+    <addaction name="actPostConfig"/>
     <addaction name="separator"/>
-    <addaction name="actionCountour"/>
-    <addaction name="actionSymbol_map"/>
-    <addaction name="actionStream"/>
-    <addaction name="actionThreshold_2"/>
+    <addaction name="actColorMap"/>
+    <addaction name="actCountourMap"/>
+    <addaction name="actSymbolMap"/>
+    <addaction name="actStreamMap"/>
     <addaction name="separator"/>
     <addaction name="actionHistory"/>
    </widget>
@@ -3011,7 +3011,7 @@ QTreeView::branch:open:has-children:has-siblings  {
     <addaction name="actElemSelect"/>
     <addaction name="separator"/>
     <addaction name="actHideSelect"/>
-    <addaction name="actHideReverse"/>
+    <addaction name="actExtractSelect"/>
     <addaction name="actShowAll"/>
     <addaction name="separator"/>
     <addaction name="actionExtract_geometry"/>
@@ -3269,21 +3269,6 @@ QTreeView::branch:open:has-children:has-siblings  {
    <addaction name="actionRoll_left"/>
    <addaction name="actionRoll_up"/>
    <addaction name="actionRoll_down"/>
-   <addaction name="separator"/>
-   <addaction name="actXY"/>
-   <addaction name="actYZ"/>
-   <addaction name="actXZ"/>
-   <addaction name="actXYZ"/>
-   <addaction name="separator"/>
-   <addaction name="actShowGeom"/>
-   <addaction name="actShowMesh"/>
-   <addaction name="separator"/>
-   <addaction name="actNodeSelect"/>
-   <addaction name="actElemSelect"/>
-   <addaction name="separator"/>
-   <addaction name="actHideSelect"/>
-   <addaction name="actHideReverse"/>
-   <addaction name="actShowAll"/>
   </widget>
   <widget class="QToolBar" name="toolBar_4">
    <property name="windowTitle">
@@ -3329,7 +3314,63 @@ QTreeView::branch:open:has-children:has-siblings  {
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actShowMesh"/>
+   <addaction name="actShowGeom"/>
    <addaction name="actColorMap"/>
+   <addaction name="actCountourMap"/>
+   <addaction name="actSymbolMap"/>
+   <addaction name="actStreamMap"/>
+   <addaction name="actionHistory"/>
+  </widget>
+  <widget class="QToolBar" name="toolBar_6">
+   <property name="windowTitle">
+    <string>toolBar_6</string>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>20</width>
+     <height>20</height>
+    </size>
+   </property>
+   <property name="toolButtonStyle">
+    <enum>Qt::ToolButtonIconOnly</enum>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actNodeSelect"/>
+   <addaction name="actElemSelect"/>
+   <addaction name="separator"/>
+   <addaction name="actHideSelect"/>
+   <addaction name="actExtractSelect"/>
+   <addaction name="actShowAll"/>
+  </widget>
+  <widget class="QToolBar" name="toolBar_7">
+   <property name="windowTitle">
+    <string>toolBar_7</string>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>20</width>
+     <height>20</height>
+    </size>
+   </property>
+   <property name="toolButtonStyle">
+    <enum>Qt::ToolButtonIconOnly</enum>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actXYZ"/>
+   <addaction name="actXY"/>
+   <addaction name="actYZ"/>
+   <addaction name="actXZ"/>
   </widget>
   <action name="actRemote">
    <property name="icon">
@@ -4007,13 +4048,13 @@ QTreeView::branch:open:has-children:has-siblings  {
     <string>Manager</string>
    </property>
   </action>
-  <action name="actPostManager">
+  <action name="actPostOpen">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/setting.png</normaloff>:/icons/setting.png</iconset>
+     <normaloff>:/icons/load_database.png</normaloff>:/icons/load_database.png</iconset>
    </property>
    <property name="text">
-    <string>Create</string>
+    <string>Open database</string>
    </property>
   </action>
   <action name="actionDelete">
@@ -4206,7 +4247,7 @@ QTreeView::branch:open:has-children:has-siblings  {
     <string>Hide selected</string>
    </property>
   </action>
-  <action name="actHideReverse">
+  <action name="actExtractSelect">
    <property name="icon">
     <iconset resource="icons.qrc">
      <normaloff>:/icons/show_extract.png</normaloff>:/icons/show_extract.png</iconset>
@@ -4415,16 +4456,7 @@ QTreeView::branch:open:has-children:has-siblings  {
     <string>Manager</string>
    </property>
   </action>
-  <action name="actColorMap">
-   <property name="icon">
-    <iconset resource="icons.qrc">
-     <normaloff>:/icons/countour.png</normaloff>:/icons/countour.png</iconset>
-   </property>
-   <property name="text">
-    <string>Colored Map</string>
-   </property>
-  </action>
-  <action name="actionCountour">
+  <action name="actCountourMap">
    <property name="icon">
     <iconset resource="icons.qrc">
      <normaloff>:/icons/countour.png</normaloff>:/icons/countour.png</iconset>
@@ -4433,7 +4465,7 @@ QTreeView::branch:open:has-children:has-siblings  {
     <string>Countour map</string>
    </property>
   </action>
-  <action name="actionSymbol_map">
+  <action name="actSymbolMap">
    <property name="icon">
     <iconset resource="icons.qrc">
      <normaloff>:/icons/Symbolplot.png</normaloff>:/icons/Symbolplot.png</iconset>
@@ -4442,7 +4474,7 @@ QTreeView::branch:open:has-children:has-siblings  {
     <string>Symbol map</string>
    </property>
   </action>
-  <action name="actionStream">
+  <action name="actStreamMap">
    <property name="icon">
     <iconset resource="icons.qrc">
      <normaloff>:/icons/stream.png</normaloff>:/icons/stream.png</iconset>
@@ -4451,7 +4483,7 @@ QTreeView::branch:open:has-children:has-siblings  {
     <string>Stream</string>
    </property>
   </action>
-  <action name="actionThreshold_2">
+  <action name="actThreshold">
    <property name="icon">
     <iconset resource="icons.qrc">
      <normaloff>:/icons/filter.png</normaloff>:/icons/filter.png</iconset>
@@ -4467,6 +4499,24 @@ QTreeView::branch:open:has-children:has-siblings  {
    </property>
    <property name="text">
     <string>History</string>
+   </property>
+  </action>
+  <action name="actPostConfig">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/setting.png</normaloff>:/icons/setting.png</iconset>
+   </property>
+   <property name="text">
+    <string>Configuration</string>
+   </property>
+  </action>
+  <action name="actColorMap">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/coloredMap.png</normaloff>:/icons/coloredMap.png</iconset>
+   </property>
+   <property name="text">
+    <string>Colored map</string>
    </property>
   </action>
  </widget>

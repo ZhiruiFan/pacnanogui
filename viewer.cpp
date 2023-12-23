@@ -25,6 +25,12 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
 
     /*  camera object  */
     camera = new Camera(nullptr);
+    post   = new Post(nullptr);
+    connect(post, &Post::accepted, this, [&]() {
+        field->setWarpScale(post->getWarpScale());
+        field->setLimits(post->getLimitType(), post->getLowerLimit(),
+                         post->getUpperLimit());
+    });
 
     /*  setup the render for FEM model viewer */
     renWin = vtkGenericOpenGLRenderWindow::New();
@@ -40,18 +46,18 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     /*  field variables  */
     ugridCur       = vtkUnstructuredGrid::New();
     dtMap          = vtkDataSetMapper::New();
-    isAssigedField = false;
-    isAssigedField = false;
+    isModelCreated = false;
     isModelLoaded  = false;
 
     /*  Picker vriables  */
-    pick         = Pick::New();
-    interact     = renWin->GetInteractor();
-    initStyle    = vtkInteractorStyleTrackballCamera::New();
-    nodeSelector = vtkSelectionNode::New();
-    cellSelector = vtkSelection::New();
-    extractor    = vtkExtractSelection::New();
-    cellIdsAll   = vtkIdTypeArray::New();
+    pick          = Pick::New();
+    interact      = renWin->GetInteractor();
+    initStyle     = vtkInteractorStyleTrackballCamera::New();
+    nodeSelector  = vtkSelectionNode::New();
+    cellSelector  = vtkSelection::New();
+    extractor     = vtkExtractSelection::New();
+    cellIdsAll    = vtkIdTypeArray::New();
+    pickThreshold = vtkThreshold::New();
     //  configurations
     nodeSelector->SetFieldType(vtkSelectionNode::CELL);
     nodeSelector->SetContentType(vtkSelectionNode::INDICES);
@@ -96,7 +102,7 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     showCameraAxonometric();
 
     /*  source for viewer  */
-    isShownField = true;
+    isModelMode = true;
 }
 
 /*  ============================================================================
@@ -135,7 +141,7 @@ void Viewer::setInputData(Field*& input) {
     portCur = field->getInputPort();
 
     /*  update the flag  */
-    isAssigedField = true;
+    isModelCreated = true;
 
     /*  initialize the filed  */
     field->checkAnchor();
@@ -171,9 +177,8 @@ void Viewer::showCompleteModel() {
     /*  check the status  */
     if (isModelLoaded) {
         /*  reset the unstructured grid to original  */
-        // ugridCur->DeepCopy(field->ugrid);
-        // pick->setInputData(ugridCur);
-        portCur = field->getInputPort();
+        portCur = isModelMode ? field->getInputPort()
+                              : field->getThresholdOutputPort();
         pick->setInputData(portCur);
         cellIdsAll->Initialize();
         update();
@@ -185,7 +190,7 @@ void Viewer::showCompleteModel() {
  *  @param  index: the index of the model that will be shown  */
 void Viewer::showModel() {
     /*  check the field is assigned or not  */
-    if (isAssigedField) {
+    if (isModelCreated) {
         /*  assign the recorder  */
         recorder[0] = 0;
 
@@ -214,7 +219,7 @@ void Viewer::showModel() {
 
         /*  update the model loaded flag  */
         isModelLoaded = true;
-        isShownField  = false;
+        isModelMode   = true;
     }
 }
 
@@ -248,7 +253,7 @@ void Viewer::showMesh() {
  *  @param  comp: the component of the point data that will be extracted  */
 void Viewer::initPointField(const int& idx, const int& comp) {
     /*  update the flags  */
-    isShownField = true;
+    isModelMode = false;
 
     /*  assign the recorder  */
     recorder[0] = 2;
@@ -309,7 +314,7 @@ void Viewer::initPointField(const int& idx, const int& comp) {
 
     /*  set the input port of the field  */
     portCur = field->getInputPort();
-    field->setInputConnection(portCur);
+    // field->setInputConnection(portCur);
     field->updateAnchor(100.0, 0.01, 1.0);
     portCur = field->getThresholdOutputPort();
     update();
@@ -333,7 +338,6 @@ void Viewer::showPointField(const int& index, const int& comp) {
     dtMap->SetScalarModeToUsePointData();
     dtMap->SelectColorArray(name.str().c_str());
     dtMap->SetLookupTable(lut);
-    std::cout << lut->GetRange()[0] << "\t" << lut->GetRange()[1] << "\n";
     dtMap->SetScalarRange(lut->GetRange());
 
     /*  update the port  */
@@ -361,7 +365,7 @@ void Viewer::showCellField(const int& idx) {}
  *  @param  field: the field that will be shown
  *  @param  mode: node or element selection mode, if true, then node selection
  *                mode; else element selection mode  */
-void Viewer::pickupCells(bool mode) {
+void Viewer::activePickMode(const bool& mode) {
     /*  check the model is loaded or not  */
     if (isModelLoaded) {
         /*  set the head information  */
@@ -379,8 +383,8 @@ void Viewer::pickupCells(bool mode) {
 
         /*  create the picker  */
         // pick->setInputData(ugridCur);
-        pickSource = isShownField ? field->getThresholdOutputPort()
-                                  : field->getInputPort();
+        pickSource = isModelMode ? field->getInputPort()
+                                 : field->getThresholdOutputPort();
         pick->setSourcePort(pickSource);
 
         pick->setInputData(portCur);
@@ -399,7 +403,7 @@ void Viewer::pickupCells(bool mode) {
 
 /*  ############################################################################
  *  hideCells: hide the cells selected by the picker  */
-void Viewer::hideCells() {
+void Viewer::handleCellPick(const bool& pickMode) {
     /*  Get the picker status  */
     if (pick->isPickerActivated() && pick->isCellSelectionModeOn()) {
         cellIdsCur = pick->getSelectedCellIds();
@@ -416,17 +420,17 @@ void Viewer::hideCells() {
         extractor->Update();
 
         /*  update the current port  */
-        portCur = extractor->GetOutputPort();
+        field->setPickInputConnection(isModelMode, pickMode, cellIdsCur);
+        portCur = field->getPickOutputPort();
 
         /*  get the unstructured grid of the unselected cells  */
-        ugridCur->ShallowCopy(extractor->GetOutput());
+        // ugridCur->ShallowCopy(extractor->GetOutput());
         // dtMap->SetInputData(ugridCur);
-        dtMap->SetInputConnection(portCur);
+        // dtMap->SetInputConnection(portCur);
         pick->turnOff();
         interact->SetInteractorStyle(initStyle);
 
         /*  render the window  */
-        // renWin->Render();
         update();
     }
 }

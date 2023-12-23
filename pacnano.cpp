@@ -21,6 +21,16 @@ pacnano::pacnano(QWidget* parent) : QMainWindow(parent), ui(new Ui::pacnano) {
     /*  CREATE UI  */
     ui->setupUi(this);
 
+    /*  Initialize the mode flags  */
+    USE_MODEL_MODE = true;
+    USE_FIELD_MODE = false;
+
+    USE_HIDE_MODE    = true;
+    USE_EXTRACT_MODE = false;
+
+    USE_CELL_MODE = true;
+    USE_NODE_MODE = false;
+
     /*  Open forder  */
     openDir = new Open(this, 0);
     connect(ui->actProjOld, &QAction::triggered, openDir, &QDialog::show);
@@ -215,39 +225,19 @@ void pacnano::setupMaterialCreation() {
  *  viewport and so on   */
 void pacnano::setupRenderWindow() {
     /*  Create the render window  */
-    renWin = new Viewer(ui->viewWindow);
-    // QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
-    QString file = "/Volumes/opt/Documents/code/TopOpt-301-1.vtu";
+    renWin       = new Viewer(ui->viewWindow);
+    QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
+    // QString file = "/Volumes/opt/Documents/code/TopOpt-301-1.vtu";
     Field* field = new Field(file);
     renWin->setInputData(field);
 
-    /*  connect to the camera configuraiton  */
-    connect(ui->actConfigCamera, &QAction::triggered, renWin,
-            [&]() { renWin->configCamera(); });
+    /*  ************************************************************************
+     *  post configuration  */
+    connect(ui->actPostConfig, &QAction::triggered, renWin,
+            [&]() { renWin->configPost(); });
 
-    /*  connect to the node selection  */
-    connect(ui->actNodeSelect, &QAction::triggered, renWin,
-            [&]() { renWin->pickupCells(false); });
-
-    /*  connect to the element selection  */
-    connect(ui->actElemSelect, &QAction::triggered, renWin,
-            [&]() { renWin->pickupCells(true); });
-
-    /*  connect to show geometry  */
-    connect(ui->actShowGeom, &QAction::triggered, renWin, [&]() {
-        ui->mainView->setCurrentIndex(1);
-        ui->viewWindow->show();
-        renWin->showModel();
-    });
-
-    connect(ui->actColorMap, &QAction::triggered, renWin,
-            [&]() { renWin->initPointField(0, 0); });
-
-    /*  connect to show geometry  */
-    connect(ui->actShowMesh, &QAction::triggered, renWin,
-            [&]() { renWin->showMesh(); });
-
-    /*  show the plane view  */
+    /*  ************************************************************************
+     *  plane viewer port  */
     connect(ui->actXY, &QAction::triggered, renWin,
             [&]() { renWin->showCameraXY(); });
     connect(ui->actYZ, &QAction::triggered, renWin,
@@ -256,31 +246,58 @@ void pacnano::setupRenderWindow() {
             [&]() { renWin->showCameraXZ(); });
     connect(ui->actXYZ, &QAction::triggered, renWin,
             [&]() { renWin->showCameraAxonometric(); });
+    /*  connect to the camera configuraiton  */
+    connect(ui->actConfigCamera, &QAction::triggered, renWin,
+            [&]() { renWin->configCamera(); });
 
-    /*  hide selection  */
+    /*  ************************************************************************
+     *  show model and field   */
+    connect(ui->actShowAll, &QAction::triggered, renWin,
+            [&]() { renWin->showCompleteModel(); });
+    connect(ui->actShowGeom, &QAction::triggered, renWin, [&]() {
+        ui->mainView->setCurrentIndex(1);
+        ui->viewWindow->show();
+        renWin->showModel();
+    });
+    connect(ui->actShowMesh, &QAction::triggered, renWin,
+            [&]() { renWin->showMesh(); });
+    connect(ui->actColorMap, &QAction::triggered, renWin,
+            [&]() { renWin->initPointField(0, 0); });
+
+    /*  ************************************************************************
+     *  connect to selection  */
+    connect(ui->actNodeSelect, &QAction::triggered, renWin,
+            [&]() { renWin->activePickMode(USE_NODE_MODE); });
+    connect(ui->actElemSelect, &QAction::triggered, renWin,
+            [&]() { renWin->activePickMode(USE_CELL_MODE); });
+
+    /*  ************************************************************************
+     *  hide selection  */
     connect(ui->btnHideCellCancel, &QPushButton::clicked, ui->innerTool, [&]() {
         // ui->innerTool->hide();
         ui->innerTool->setCurrentIndex(0);
         renWin->turnOffPickMode();
-        ui->actHideReverse->setDisabled(false);
+        ui->actExtractSelect->setDisabled(false);
     });
     connect(ui->btnHideCellOk, &QPushButton::clicked, ui->innerTool, [&]() {
-        renWin->hideCells();
+        renWin->handleCellPick(USE_HIDE_MODE);
         ui->innerTool->setCurrentIndex(0);
-        ui->actHideReverse->setDisabled(false);
+        ui->actExtractSelect->setDisabled(false);
     });
     connect(ui->actHideSelect, &QAction::triggered, renWin, [&]() {
         //  get the status of the picker
         if (renWin->isPickerActivated()) {
-            renWin->hideCells();
+            renWin->handleCellPick(USE_HIDE_MODE);
         } else {
-            ui->actHideReverse->setDisabled(true);
+            ui->actExtractSelect->setDisabled(true);
             ui->innerTool->show();
             ui->innerTool->setCurrentIndex(1);
-            renWin->pickupCells(true);
+            renWin->activePickMode(USE_CELL_MODE);
         }
     });
-    /*  extract selection  */
+
+    /*  ************************************************************************
+     *  extract selection   */
     connect(ui->btnExtractCellCancel, &QPushButton::clicked, ui->innerTool,
             [&]() {
                 ui->innerTool->setCurrentIndex(0);
@@ -288,22 +305,18 @@ void pacnano::setupRenderWindow() {
                 ui->actHideSelect->setDisabled(false);
             });
     connect(ui->btnExtractCellOk, &QPushButton::clicked, ui->innerTool, [&]() {
-        renWin->extractCells();
+        renWin->handleCellPick(USE_EXTRACT_MODE);
         ui->innerTool->setCurrentIndex(0);
         ui->actHideSelect->setDisabled(false);
     });
-    connect(ui->actHideReverse, &QAction::triggered, renWin, [&]() {
+    connect(ui->actExtractSelect, &QAction::triggered, renWin, [&]() {
         //  get the status of the picker
         if (renWin->isPickerActivated()) {
-            renWin->extractCells();
+            renWin->handleCellPick(USE_EXTRACT_MODE);
         } else {
             ui->actHideSelect->setDisabled(true);
             ui->innerTool->setCurrentIndex(2);
-            renWin->pickupCells(true);
+            renWin->activePickMode(USE_CELL_MODE);
         }
     });
-
-    /*  show complete model  */
-    connect(ui->actShowAll, &QAction::triggered, renWin,
-            [&]() { renWin->showCompleteModel(); });
 }
