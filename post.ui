@@ -206,14 +206,14 @@
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_7">
         <item>
-         <widget class="QRadioButton" name="radioButton">
+         <widget class="QRadioButton" name="useUniformScarlarBar">
           <property name="text">
            <string>Uniform</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QRadioButton" name="radioButton_2">
+         <widget class="QRadioButton" name="useDynamicScalarBar">
           <property name="text">
            <string>Dynamic</string>
           </property>
@@ -231,7 +231,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QSpinBox" name="spinBox">
+         <widget class="QSpinBox" name="numIntervals">
           <property name="minimum">
            <number>2</number>
           </property>

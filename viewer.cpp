@@ -30,6 +30,9 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
         field->setWarpScale(post->getWarpScale());
         field->setLimits(post->getLimitType(), post->getLowerLimit(),
                          post->getUpperLimit());
+        isUseDynamicScalarBar   = post->isUseDynamicScalarBar();
+        numIntervalsInScalarBar = post->getNumberOfIntervalsInScalarBar();
+        field->updateAnchor();
     });
 
     /*  setup the render for FEM model viewer */
@@ -164,7 +167,7 @@ void Viewer::update() {
         }
         /*  show point related field  */
         case 2: {
-            showPointField(recorder[1], recorder[2]);
+            showPointField();
             break;
         }
     }
@@ -314,8 +317,6 @@ void Viewer::initPointField(const int& idx, const int& comp) {
 
     /*  set the input port of the field  */
     portCur = field->getInputPort();
-    // field->setInputConnection(portCur);
-    field->updateAnchor(100.0, 0.01, 1.0);
     portCur = field->getThresholdOutputPort();
     update();
 }
@@ -326,7 +327,11 @@ void Viewer::initPointField(const int& idx, const int& comp) {
  *  @param  field: the field that to be shown
  *  @param  idx: the index of the component in the data set
  *  @param  comp: the component index  */
-void Viewer::showPointField(const int& index, const int& comp) {
+void Viewer::showPointField() {
+    /*  get the field index and its component  */
+    int index = recorder[1];
+    int comp  = recorder[2];
+
     /*  get the name of the field  */
     std::stringstream name;
     name << field->getPointDataArrayName(index) << ":" << compName[comp];
@@ -421,12 +426,10 @@ void Viewer::handleCellPick(const bool& pickMode) {
 
         /*  update the current port  */
         field->setPickInputConnection(isModelMode, pickMode, cellIdsCur);
-        portCur = field->getPickOutputPort();
+        portCur  = field->getPickOutputPort();
+        ugridCur = field->getThresholdOutput();
 
-        /*  get the unstructured grid of the unselected cells  */
-        // ugridCur->ShallowCopy(extractor->GetOutput());
-        // dtMap->SetInputData(ugridCur);
-        // dtMap->SetInputConnection(portCur);
+        /*  turn off picker  */
         pick->turnOff();
         interact->SetInteractorStyle(initStyle);
 
@@ -435,76 +438,77 @@ void Viewer::handleCellPick(const bool& pickMode) {
     }
 }
 
-/*  ============================================================================
- *  extractCells: show the cells selected by the picker  */
-void Viewer::extractCells() {
-    /*  Get the picker status  */
-    if (pick->isPickerActivated() && pick->isCellSelectionModeOn()) {
-        /*  get the inverse of the selected cells  */
-        cellIdsCur = pick->getSelectedCellIds();
+// /*
+// ============================================================================
+//  *  extractCells: show the cells selected by the picker  */
+// void Viewer::extractCells() {
+//     /*  Get the picker status  */
+//     if (pick->isPickerActivated() && pick->isCellSelectionModeOn()) {
+//         /*  get the inverse of the selected cells  */
+//         cellIdsCur = pick->getSelectedCellIds();
 
-        /*  get the unstructured grid of the unselected cells  */
-        nodeSelector->GetProperties()->Set(vtkSelectionNode::INVERSE(), 1);
-        nodeSelector->SetSelectionList(cellIdsCur);
-        cellSelector->AddNode(nodeSelector);
-        extractor->SetInputConnection(0, pick->getIdFilter()->GetOutputPort());
-        extractor->SetInputData(1, cellSelector);
-        extractor->Update();
-        ugridCur->ShallowCopy(extractor->GetOutput());
+//         /*  get the unstructured grid of the unselected cells  */
+//         nodeSelector->GetProperties()->Set(vtkSelectionNode::INVERSE(), 1);
+//         nodeSelector->SetSelectionList(cellIdsCur);
+//         cellSelector->AddNode(nodeSelector);
+//         extractor->SetInputConnection(0,
+//         pick->getIdFilter()->GetOutputPort()); extractor->SetInputData(1,
+//         cellSelector); extractor->Update();
+//         ugridCur->ShallowCopy(extractor->GetOutput());
 
-        /*  extract the unselected cell ids  */
-        //  get the locator
-        locator = pick->getCellLocator();
-        //  extract the cell ids
-        cellIdsAll->Initialize();
-        for (vtkIdType i = 0; i < ugridCur->GetNumberOfCells(); ++i) {
-            /*  Calcualte the center location of the current cell  */
-            //  reset the center coordiantes
-            cellCenter[0] = 0.0;
-            cellCenter[1] = 0.0;
-            cellCenter[2] = 0.0;
-            //  extract the points
-            points = ugridCur->GetCell(i)->GetPoints();
-            //  get the number of points in current cell
-            vtkIdType numPoints = points->GetNumberOfPoints();
-            //  calculate the location of the cell
-            for (vtkIdType pointId = 0; pointId < numPoints; ++pointId) {
-                points->GetPoint(pointId, point);
-                cellCenter[0] += point[0];
-                cellCenter[1] += point[1];
-                cellCenter[2] += point[2];
-            }
-            cellCenter[0] /= numPoints;
-            cellCenter[1] /= numPoints;
-            cellCenter[2] /= numPoints;
-            //  find the cell id
-            locator->SetTolerance(0.001);
-            cellIdsAll->InsertNextValue(locator->FindCell(cellCenter));
-        }
+//         /*  extract the unselected cell ids  */
+//         //  get the locator
+//         locator = pick->getCellLocator();
+//         //  extract the cell ids
+//         cellIdsAll->Initialize();
+//         for (vtkIdType i = 0; i < ugridCur->GetNumberOfCells(); ++i) {
+//             /*  Calcualte the center location of the current cell  */
+//             //  reset the center coordiantes
+//             cellCenter[0] = 0.0;
+//             cellCenter[1] = 0.0;
+//             cellCenter[2] = 0.0;
+//             //  extract the points
+//             points = ugridCur->GetCell(i)->GetPoints();
+//             //  get the number of points in current cell
+//             vtkIdType numPoints = points->GetNumberOfPoints();
+//             //  calculate the location of the cell
+//             for (vtkIdType pointId = 0; pointId < numPoints; ++pointId) {
+//                 points->GetPoint(pointId, point);
+//                 cellCenter[0] += point[0];
+//                 cellCenter[1] += point[1];
+//                 cellCenter[2] += point[2];
+//             }
+//             cellCenter[0] /= numPoints;
+//             cellCenter[1] /= numPoints;
+//             cellCenter[2] /= numPoints;
+//             //  find the cell id
+//             locator->SetTolerance(0.001);
+//             cellIdsAll->InsertNextValue(locator->FindCell(cellCenter));
+//         }
 
-        /*  extract the selected cells  */
-        nodeSelector->GetProperties()->Set(vtkSelectionNode::INVERSE(), 0);
-        nodeSelector->SetSelectionList(cellIdsCur);
-        cellSelector->AddNode(nodeSelector);
-        extractor->SetInputConnection(0, pick->getIdFilter()->GetOutputPort());
-        extractor->SetInputData(1, cellSelector);
-        extractor->Update();
+//         /*  extract the selected cells  */
+//         nodeSelector->GetProperties()->Set(vtkSelectionNode::INVERSE(), 0);
+//         nodeSelector->SetSelectionList(cellIdsCur);
+//         cellSelector->AddNode(nodeSelector);
+//         extractor->SetInputConnection(0,
+//         pick->getIdFilter()->GetOutputPort()); extractor->SetInputData(1,
+//         cellSelector); extractor->Update();
 
-        /*  update the current port  */
-        portCur = extractor->GetOutputPort();
+//         /*  update the current port  */
+//         portCur = extractor->GetOutputPort();
 
-        /*  get the unstructured grid of the unselected cells  */
-        ugridCur->ShallowCopy(extractor->GetOutput());
-        // dtMap->SetInputData(ugridCur);
-        dtMap->SetInputConnection(portCur);
-        pick->turnOff();
-        interact->SetInteractorStyle(initStyle);
+//         /*  get the unstructured grid of the unselected cells  */
+//         ugridCur->ShallowCopy(extractor->GetOutput());
+//         // dtMap->SetInputData(ugridCur);
+//         dtMap->SetInputConnection(portCur);
+//         pick->turnOff();
+//         interact->SetInteractorStyle(initStyle);
 
-        /*  render the window  */
-        // renWin->Render();
-        update();
-    }
-}
+//         /*  render the window  */
+//         // renWin->Render();
+//         update();
+//     }
+// }
 
 /*  ############################################################################
  *  showCamera: configure the camera to show the axionometric view  */
@@ -606,7 +610,7 @@ void Viewer::showScalarBar() {
     scalarBar->GetLabelTextProperty()->SetItalic(0);
     scalarBar->GetLabelTextProperty()->SetJustificationToLeft();
     scalarBar->GetLabelTextProperty()->SetVerticalJustificationToBottom();
-    scalarBar->SetNumberOfLabels(12);
+    scalarBar->SetNumberOfLabels(numIntervalsInScalarBar);
 
     /*  set the position  */
     scalarBar->SetPosition(0.02, 0.60);

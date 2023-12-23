@@ -65,6 +65,21 @@ public:
      *  @return  upper limit value  */
     double getUpperLimit();
 
+    /*  isUseDynamicScalarBar: get the status of the scarlar bar that is
+     *  uniform or dynamic
+     *  @return  true for dynamic bar, false for uniform bar  */
+    bool isUseDynamicScalarBar();
+
+    /*  isUseUniformScalarBar: get the status of the scarlar bar that is
+     *  uniform or dynamic
+     *  @return  true for uniform bar, false for dynamic bar  */
+    bool isUseUniformScalarBar();
+
+    /*  getNumberOfIntervalsInScalarBar: return the number of intervals in
+     *  the scalar bar
+     *  @return  the number of invervals in Scalar bar  */
+    int getNumberOfIntervalsInScalarBar();
+
 private slots:
     /*  ########################################################################
      *  reset: reset the diag to the original  */

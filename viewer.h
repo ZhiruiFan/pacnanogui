@@ -69,6 +69,8 @@ private:
 
     Camera* camera;                                // camera configuration
     Post* post;                                    // postprocessing config
+    bool isUseDynamicScalarBar;                    // usign dynamic bar or not?
+    int numIntervalsInScalarBar;                   // number of intervals
 
     vtkAlgorithmOutput* portCur;                   // current port
     vtkUnstructuredGrid* ugridCur;                 // current ugrid
@@ -189,7 +191,7 @@ public:
      *  it includes the nodal displacement, reaction force and so on
      *  @param  idx: the index of the component in the data set
      *  @param  comp: the component index  */
-    void showPointField(const int& idx, const int& comp);
+    void showPointField();
 
     /*  showCellField: display the information with respect to the elements,
      *  it includes the stress components, design variables in topology

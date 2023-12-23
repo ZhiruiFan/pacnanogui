@@ -62,6 +62,14 @@ Post::Post(QWidget *parent) : QDialog(parent), ui(new Ui::Post) {
             upperLimit    = 1.0;
         }
 
+        //  scalar bar
+        if (ui->useUniformScarlarBar->isChecked()) {
+            isDynamicScalarBar = false;
+        } else {
+            isDynamicScalarBar = true;
+        }
+        numIntervals = ui->numIntervals->value();
+
         //  active the accept signal
         accept();
     });
@@ -98,8 +106,8 @@ Post::~Post() { delete ui; }
  *  reset: reset the diag to the original  */
 void Post::reset() {
     /*  Warping configuration  */
-    ui->useDeform->setChecked(true);
-    ui->useUndeform->setChecked(false);
+    ui->useUndeform->setChecked(true);
+    ui->useDeform->setChecked(false);
     ui->warpScale->setDisabled(true);
     ui->warpScale->setValue(0.0);
 
@@ -117,6 +125,11 @@ void Post::reset() {
     ui->useUpperLimit->setDisabled(true);
     ui->upperLimit->setDisabled(true);
     ui->upperLimit->setValue(1.0);
+
+    /*  scalar table  */
+    ui->useUniformScarlarBar->setChecked(true);
+    ui->useDynamicScalarBar->setChecked(false);
+    ui->numIntervals->setValue(12);
 }
 
 /*  ############################################################################
@@ -140,3 +153,21 @@ double Post::getLowerLimit() { return lowerLimit; }
  *  getUpperLimit: get the value of the upper limit
  *  @return  upper limit value  */
 double Post::getUpperLimit() { return upperLimit; }
+
+/*  ============================================================================
+ *  isUseDynamicScalarBar: get the status of the scarlar bar that is
+ *  uniform or dynamic
+ *  @return  true for dynamic bar, false for uniform bar  */
+bool Post::isUseDynamicScalarBar() { return isDynamicScalarBar; }
+
+/*  ============================================================================
+ *  isUseUniformScalarBar: get the status of the scarlar bar that is
+ *  uniform or dynamic
+ *  @return  true for uniform bar, false for dynamic bar  */
+bool Post::isUseUniformScalarBar() { return !isDynamicScalarBar; }
+
+/*  ============================================================================
+ *  getNumberOfIntervalsInScalarBar: return the number of intervals in
+ *  the scalar bar
+ *  @return  the number of invervals in Scalar bar  */
+int Post::getNumberOfIntervalsInScalarBar() { return numIntervals; }

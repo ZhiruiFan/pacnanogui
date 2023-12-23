@@ -109,19 +109,29 @@ bool Field::checkAnchor() {
 }
 
 /*  ============================================================================
- *  updateAnchor: update the anchor field
- *  @param  scale: the warping scale
- *  @param  lower: the lower limit of the threshold
- *  @param  upper: the uppre limit of the threshold  */
-void Field::updateAnchor(const double& scale, const double& lower,
-                         const double& upper) {
+ *  updateAnchor: update the anchor field  */
+void Field::updateAnchor() {
     /*  update the warper  */
     warp->SetInputArrayToProcess(0, 0, 0,
                                  vtkDataObject::FIELD_ASSOCIATION_POINTS,
                                  pointData->GetArray(idxU)->GetName());
     warp->SetInputConnection(portAll);
-    warp->SetScaleFactor(scale);
+    warp->SetScaleFactor(warpScale);
     warp->Update();
+
+    /*  handle for the limit type, i.e., determine the lower and upper limit  */
+    switch (limitType) {
+        case 0: {
+            lowerLimit = cellData->GetArray(idxDen)->GetRange()[0];
+            upperLimit = cellData->GetArray(idxDen)->GetRange()[1];
+        }
+        case 2: {
+            upperLimit = cellData->GetArray(idxDen)->GetRange()[1];
+        }
+        case 3: {
+            lowerLimit = cellData->GetArray(idxDen)->GetRange()[0];
+        }
+    }
 
     /*  update the threshold  */
     denFilter->SetInputConnection(warp->GetOutputPort());
@@ -129,8 +139,8 @@ void Field::updateAnchor(const double& scale, const double& lower,
     denFilter->SetInputArrayToProcess(0, 0, 0,
                                       vtkDataObject::FIELD_ASSOCIATION_CELLS,
                                       cellData->GetArray(idxDen)->GetName());
-    denFilter->SetLowerThreshold(lower);
-    denFilter->SetUpperThreshold(upper);
+    denFilter->SetLowerThreshold(lowerLimit);
+    denFilter->SetUpperThreshold(upperLimit);
     denFilter->Update();
 }
 

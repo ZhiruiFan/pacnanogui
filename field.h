@@ -82,12 +82,8 @@ public:
      *  @return  the checked status, ture for sucessed, otherwise failed  */
     bool checkAnchor();
 
-    /*  updateAnchor: update the anchor field
-     *  @param  scale: the warping scale
-     *  @param  lower: the lower limit of the threshold
-     *  @param  upper: the uppre limit of the threshold  */
-    void updateAnchor(const double& scale, const double& lower,
-                      const double& upper);
+    /*  updateAnchor: update the anchor field  */
+    void updateAnchor();
 
 public:
     /*  ########################################################################
@@ -156,6 +152,9 @@ public:
     vtkAlgorithmOutput* getThresholdOutputPort() {
         return denFilter->GetOutputPort();
     }
+
+    /*  getThresholdOutput: get the output ugrid of the threshold  */
+    vtkUnstructuredGrid* getThresholdOutput() { return denFilter->GetOutput(); }
 
     /*  getCellDataArray: get the array amoung the all cell data
      *  @param  idx: the index of the cell data array  */
