@@ -26,16 +26,13 @@ class Post : public QDialog {
     Q_OBJECT
 
 private:
-    Ui::Post *ui;               // UI interface
+    Ui::Post *ui;       // UI interface
 
-    double warpScale;           // warp scale
+    double warpScale;   // warp scale
 
-    int thresholdFlag;          // flag for threshold
-    double lowerLimit;          // lower limit of threshold
-    double upperLimit;          // upper limit of threshold
-
-    double isDynamicScalarBar;  // style of the scalar
-    int numIntervals;           // number of intervals
+    int thresholdFlag;  // flag for threshold
+    double lowerLimit;  // lower limit of threshold
+    double upperLimit;  // upper limit of threshold
 
 public:
     /*  ########################################################################
@@ -64,21 +61,6 @@ public:
     /*  getUpperLimit: get the value of the upper limit
      *  @return  upper limit value  */
     double getUpperLimit();
-
-    /*  isUseDynamicScalarBar: get the status of the scarlar bar that is
-     *  uniform or dynamic
-     *  @return  true for dynamic bar, false for uniform bar  */
-    bool isUseDynamicScalarBar();
-
-    /*  isUseUniformScalarBar: get the status of the scarlar bar that is
-     *  uniform or dynamic
-     *  @return  true for uniform bar, false for dynamic bar  */
-    bool isUseUniformScalarBar();
-
-    /*  getNumberOfIntervalsInScalarBar: return the number of intervals in
-     *  the scalar bar
-     *  @return  the number of invervals in Scalar bar  */
-    int getNumberOfIntervalsInScalarBar();
 
 private slots:
     /*  ########################################################################

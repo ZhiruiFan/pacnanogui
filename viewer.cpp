@@ -25,15 +25,6 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
 
     /*  camera object  */
     camera = new Camera(nullptr);
-    post   = new Post(nullptr);
-    connect(post, &Post::accepted, this, [&]() {
-        field->setWarpScale(post->getWarpScale());
-        field->setLimits(post->getLimitType(), post->getLowerLimit(),
-                         post->getUpperLimit());
-        isUseDynamicScalarBar   = post->isUseDynamicScalarBar();
-        numIntervalsInScalarBar = post->getNumberOfIntervalsInScalarBar();
-        field->updateAnchor();
-    });
 
     /*  setup the render for FEM model viewer */
     renWin = vtkGenericOpenGLRenderWindow::New();
@@ -47,23 +38,16 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     render->SetBackground(colors->GetColor3d("White").GetData());
 
     /*  field variables  */
-    ugridCur       = vtkUnstructuredGrid::New();
     dtMap          = vtkDataSetMapper::New();
     isModelCreated = false;
     isModelLoaded  = false;
+    isModelMode    = true;
 
     /*  Picker vriables  */
     pick          = Pick::New();
     interact      = renWin->GetInteractor();
     initStyle     = vtkInteractorStyleTrackballCamera::New();
-    nodeSelector  = vtkSelectionNode::New();
-    cellSelector  = vtkSelection::New();
-    extractor     = vtkExtractSelection::New();
-    cellIdsAll    = vtkIdTypeArray::New();
     pickThreshold = vtkThreshold::New();
-    //  configurations
-    nodeSelector->SetFieldType(vtkSelectionNode::CELL);
-    nodeSelector->SetContentType(vtkSelectionNode::INDICES);
 
     /*  coordinates system  */
     axis    = vtkOrientationMarkerWidget::New();
@@ -91,21 +75,23 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     status->GetPositionCoordinate()->SetValue(0.2, 0.1);
     render->AddActor(status);
 
-    /*  lookup table  */
-    lut = vtkLookupTable::New();
-
-    /*  Scalar bar  */
+    /*  lookup table and scalar bar  */
+    lut               = vtkLookupTable::New();
     scalarBar         = vtkScalarBarActor::New();
     isScalarBarPlayed = false;
-    showScalarBar();
 
     /*  Camera configuration  */
     originCamera = vtkCamera::New();
     originCamera->DeepCopy(render->GetActiveCamera());
     showCameraAxonometric();
 
-    /*  source for viewer  */
-    isModelMode = true;
+    /*  postprocess configuration  */
+    post = new Post(nullptr);
+    connect(post, &Post::accepted, this, [&]() {
+        field->setWarpScale(post->getWarpScale());
+        field->setLimits(post->getLimitType(), post->getLowerLimit(),
+                         post->getUpperLimit());
+    });
 }
 
 /*  ============================================================================
@@ -140,8 +126,8 @@ void Viewer::setInputData(Field*& input) {
     pick->setField(input);
 
     /*  copy the current unstructured data for operation  */
-    // ugridCur->DeepCopy(field->ugrid);
-    portCur = field->getInputPort();
+    portModelCur = field->getInputPort();
+    portFieldCur = field->getThresholdOutputPort();
 
     /*  update the flag  */
     isModelCreated = true;
@@ -170,6 +156,11 @@ void Viewer::update() {
             showPointField();
             break;
         }
+        /*  show field geometry  */
+        case 3: {
+            showFieldGeometry();
+            break;
+        }
     }
 }
 
@@ -180,10 +171,9 @@ void Viewer::showCompleteModel() {
     /*  check the status  */
     if (isModelLoaded) {
         /*  reset the unstructured grid to original  */
-        portCur = isModelMode ? field->getInputPort()
-                              : field->getThresholdOutputPort();
-        pick->setInputData(portCur);
-        cellIdsAll->Initialize();
+        portModelCur = field->getInputPort();
+        portFieldCur = field->getThresholdOutputPort();
+        field->resetCellPick();
         update();
     }
 }
@@ -194,8 +184,9 @@ void Viewer::showCompleteModel() {
 void Viewer::showModel() {
     /*  check the field is assigned or not  */
     if (isModelCreated) {
-        /*  assign the recorder  */
+        /*  assign the flags  */
         recorder[0] = 0;
+        isModelMode = true;
 
         /*  reset the interactor style  */
         pick->turnOff();
@@ -205,9 +196,15 @@ void Viewer::showModel() {
         QString info = "Geometry of the current model";
         configStatusBar(field->getPathName(), info);
 
+        /*  remove the scalar bar  */
+        if (isScalarBarPlayed) {
+            render->RemoveActor(scalarBar);
+            isScalarBarPlayed = false;
+        }
+
         /*  set the data to the viewer  */
         // dtMap->SetInputData(ugridCur);
-        dtMap->SetInputConnection(portCur);
+        dtMap->SetInputConnection(portModelCur);
         dtMap->ScalarVisibilityOff();
 
         /*  configure the actor  */
@@ -298,8 +295,8 @@ void Viewer::initPointField(const int& idx, const int& comp) {
 
     //  assign the name of the components
     dtCur->SetName(name.str().c_str());
-    //  set the current displayed data
     field->addPointData(dtCur);
+    field->updateAnchor();
 
     /*  Create the LOOKUP table  */
     lut->SetHueRange(0.667, 0.0);
@@ -307,8 +304,9 @@ void Viewer::initPointField(const int& idx, const int& comp) {
     lut->SetTableRange(dtCur->GetRange());
     lut->Build();
 
-    /*  Create the scalar bar  */
+    /*  configure the scalar bar  */
     if (!isScalarBarPlayed) {
+        configScalarBar();
         scalarBar->SetLookupTable(lut);
         scalarBar->SetTitle(name.str().c_str());
         render->AddActor(scalarBar);
@@ -316,8 +314,7 @@ void Viewer::initPointField(const int& idx, const int& comp) {
     }
 
     /*  set the input port of the field  */
-    portCur = field->getInputPort();
-    portCur = field->getThresholdOutputPort();
+    portFieldCur = field->getThresholdOutputPort();
     update();
 }
 
@@ -337,16 +334,14 @@ void Viewer::showPointField() {
     name << field->getPointDataArrayName(index) << ":" << compName[comp];
 
     /*  setup the mapper  */
-    dtMap->SetInputConnection(portCur);
+    dtMap->SetInputConnection(portFieldCur);
+
     /*  set the anchor of the warpper  */
     dtMap->SetScalarVisibility(1);
     dtMap->SetScalarModeToUsePointData();
     dtMap->SelectColorArray(name.str().c_str());
     dtMap->SetLookupTable(lut);
     dtMap->SetScalarRange(lut->GetRange());
-
-    /*  update the port  */
-    // portCur = field->getThresholdOutputPort();
 
     /*  Setup the actor  */
     actor->SetMapper(dtMap);
@@ -358,7 +353,49 @@ void Viewer::showPointField() {
     renWin->Render();
 }
 
-/*  showCellField: display the information with respect to the elements,
+/*  ############################################################################
+ *  showFieldGeometry: display the information with respect to the nodes,
+ *  it includes the nodal displacement, reaction force and so on  */
+void Viewer::showFieldGeometry() {
+    /*  Render the window  */
+    renWin->Render();
+    if (isModelLoaded) {
+        /*  assign the flags  */
+        recorder[0] = 3;
+        isModelMode = false;
+
+        /*  reset the interactor style  */
+        pick->turnOff();
+        interact->SetInteractorStyle(initStyle);
+
+        /*  set the head information  */
+        QString info = "Geometry of the current model";
+        configStatusBar(field->getPathName(), info);
+
+        /*  remove the scalar bar  */
+        if (isScalarBarPlayed) {
+            render->RemoveActor(scalarBar);
+            isScalarBarPlayed = false;
+        }
+
+        /*  set the data to the viewer  */
+        // dtMap->SetInputData(ugridCur);
+        dtMap->SetInputConnection(portFieldCur);
+        dtMap->ScalarVisibilityOff();
+
+        /*  configure the actor  */
+        actor->GetProperty()->SetColor(colors->GetColor3d("cyan").GetData());
+        actor->GetProperty()->SetEdgeVisibility(0);
+        actor->GetProperty()->SetLineWidth(2.0);
+        actor->SetMapper(dtMap);
+
+        /*  show mesh and config camera  */
+        renWin->Render();
+    }
+}
+
+/*  ############################################################################
+ *  showCellField: display the information with respect to the elements,
  *  it includes the stress components, design variables in topology
  *  optimization and so on
  *  @param  idx: the index of the component in the data set  */
@@ -377,24 +414,17 @@ void Viewer::activePickMode(const bool& mode) {
         QString info = "Geometry of the current model";
         configStatusBar(field->getPathName(), info);
 
-        /*  set the data to the viewer  */
-        // dtMap->SetInputData(ugridCur);
-        // dtMap->SetInputConnection(portCur);
-        // dtMap->ScalarVisibilityOff();
-
-        // /*  configure the actor  */
-        // actor->GetProperty()->SetColor(colors->GetColor3d("cyan").GetData());
-        // actor->SetMapper(dtMap);
-
         /*  create the picker  */
-        // pick->setInputData(ugridCur);
-        pickSource = isModelMode ? field->getInputPort()
-                                 : field->getThresholdOutputPort();
-        pick->setSourcePort(pickSource);
-
-        pick->setInputData(portCur);
+        if (isModelMode) {
+            pick->setSourcePort(field->getInputPort());
+            pick->setInputData(portModelCur);
+        } else {
+            pick->setSourcePort(field->getThresholdOutputPort());
+            pick->setInputData(portFieldCur);
+        }
         pick->setRenderInfo(render);
-        //  determine the selection mode
+
+        /*  determine the selection mode */
         if (mode) {
             pick->setCellSelectMode();
         } else {
@@ -411,23 +441,16 @@ void Viewer::activePickMode(const bool& mode) {
 void Viewer::handleCellPick(const bool& pickMode) {
     /*  Get the picker status  */
     if (pick->isPickerActivated() && pick->isCellSelectionModeOn()) {
+        /*  get the current selected cells  */
         cellIdsCur = pick->getSelectedCellIds();
-        for (vtkIdType i = 0; i < cellIdsCur->GetNumberOfValues(); ++i) {
-            cellIdsAll->InsertNextValue(cellIdsCur->GetValue(i));
-        }
-
-        /*  get the inverse of the selected cells  */
-        nodeSelector->GetProperties()->Set(vtkSelectionNode::INVERSE(), 1);
-        nodeSelector->SetSelectionList(cellIdsAll);
-        cellSelector->AddNode(nodeSelector);
-        extractor->SetInputConnection(0, pick->getIdFilter()->GetOutputPort());
-        extractor->SetInputData(1, cellSelector);
-        extractor->Update();
 
         /*  update the current port  */
-        field->setPickInputConnection(isModelMode, pickMode, cellIdsCur);
-        portCur  = field->getPickOutputPort();
-        ugridCur = field->getThresholdOutput();
+        field->performCellPick(isModelMode, pickMode, cellIdsCur);
+        if (isModelMode) {
+            portModelCur = field->getPickOutputPort();
+        } else {
+            portFieldCur = field->getPickOutputPort();
+        }
 
         /*  turn off picker  */
         pick->turnOff();
@@ -438,85 +461,11 @@ void Viewer::handleCellPick(const bool& pickMode) {
     }
 }
 
-// /*
-// ============================================================================
-//  *  extractCells: show the cells selected by the picker  */
-// void Viewer::extractCells() {
-//     /*  Get the picker status  */
-//     if (pick->isPickerActivated() && pick->isCellSelectionModeOn()) {
-//         /*  get the inverse of the selected cells  */
-//         cellIdsCur = pick->getSelectedCellIds();
-
-//         /*  get the unstructured grid of the unselected cells  */
-//         nodeSelector->GetProperties()->Set(vtkSelectionNode::INVERSE(), 1);
-//         nodeSelector->SetSelectionList(cellIdsCur);
-//         cellSelector->AddNode(nodeSelector);
-//         extractor->SetInputConnection(0,
-//         pick->getIdFilter()->GetOutputPort()); extractor->SetInputData(1,
-//         cellSelector); extractor->Update();
-//         ugridCur->ShallowCopy(extractor->GetOutput());
-
-//         /*  extract the unselected cell ids  */
-//         //  get the locator
-//         locator = pick->getCellLocator();
-//         //  extract the cell ids
-//         cellIdsAll->Initialize();
-//         for (vtkIdType i = 0; i < ugridCur->GetNumberOfCells(); ++i) {
-//             /*  Calcualte the center location of the current cell  */
-//             //  reset the center coordiantes
-//             cellCenter[0] = 0.0;
-//             cellCenter[1] = 0.0;
-//             cellCenter[2] = 0.0;
-//             //  extract the points
-//             points = ugridCur->GetCell(i)->GetPoints();
-//             //  get the number of points in current cell
-//             vtkIdType numPoints = points->GetNumberOfPoints();
-//             //  calculate the location of the cell
-//             for (vtkIdType pointId = 0; pointId < numPoints; ++pointId) {
-//                 points->GetPoint(pointId, point);
-//                 cellCenter[0] += point[0];
-//                 cellCenter[1] += point[1];
-//                 cellCenter[2] += point[2];
-//             }
-//             cellCenter[0] /= numPoints;
-//             cellCenter[1] /= numPoints;
-//             cellCenter[2] /= numPoints;
-//             //  find the cell id
-//             locator->SetTolerance(0.001);
-//             cellIdsAll->InsertNextValue(locator->FindCell(cellCenter));
-//         }
-
-//         /*  extract the selected cells  */
-//         nodeSelector->GetProperties()->Set(vtkSelectionNode::INVERSE(), 0);
-//         nodeSelector->SetSelectionList(cellIdsCur);
-//         cellSelector->AddNode(nodeSelector);
-//         extractor->SetInputConnection(0,
-//         pick->getIdFilter()->GetOutputPort()); extractor->SetInputData(1,
-//         cellSelector); extractor->Update();
-
-//         /*  update the current port  */
-//         portCur = extractor->GetOutputPort();
-
-//         /*  get the unstructured grid of the unselected cells  */
-//         ugridCur->ShallowCopy(extractor->GetOutput());
-//         // dtMap->SetInputData(ugridCur);
-//         dtMap->SetInputConnection(portCur);
-//         pick->turnOff();
-//         interact->SetInteractorStyle(initStyle);
-
-//         /*  render the window  */
-//         // renWin->Render();
-//         update();
-//     }
-// }
-
 /*  ############################################################################
  *  showCamera: configure the camera to show the axionometric view  */
 void Viewer::showCameraAxonometric() {
     /*  reset to camera to the original  */
     render->GetActiveCamera()->DeepCopy(originCamera);
-    /*  set the camera configuration  */
-    render->GetActiveCamera()->Elevation(45.0);
     render->GetActiveCamera()->Azimuth(45.0);
     render->GetActiveCamera()->Dolly(1.0);
     render->ResetCamera();
@@ -589,7 +538,7 @@ void Viewer::configStatusBar(QString& file, QString& info) {
 
 /*  ============================================================================
  *  showScalarBar: configure the scalar bar style and then display it  */
-void Viewer::showScalarBar() {
+void Viewer::configScalarBar() {
     /*  turn off the auto font setting */
     scalarBar->UnconstrainedFontSizeOn();
 
@@ -610,7 +559,7 @@ void Viewer::showScalarBar() {
     scalarBar->GetLabelTextProperty()->SetItalic(0);
     scalarBar->GetLabelTextProperty()->SetJustificationToLeft();
     scalarBar->GetLabelTextProperty()->SetVerticalJustificationToBottom();
-    scalarBar->SetNumberOfLabels(numIntervalsInScalarBar);
+    scalarBar->SetNumberOfLabels(12);
 
     /*  set the position  */
     scalarBar->SetPosition(0.02, 0.60);

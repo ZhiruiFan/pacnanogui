@@ -38,6 +38,8 @@ Field::Field(QString& _name) {
     pointData = ugrid->GetPointData();
     cellData  = ugrid->GetCellData();
 
+    /*  cell picking  */
+    isPicked  = false;
     pickArray = vtkDoubleArray::New();
     pickArray->SetNumberOfTuples(cellData->GetArray(0)->GetNumberOfTuples());
     pickArray->SetNumberOfComponents(1);
@@ -52,6 +54,13 @@ Field::Field(QString& _name) {
     /*  create the threshold  */
     denFilter  = vtkThreshold::New();
     pickFilter = vtkThreshold::New();
+
+    /*  initialize the anchor  */
+    limitType  = 0;
+    warpScale  = 0.0;
+    lowerLimit = 0.0;
+    upperLimit = 1.0;
+    checkAnchor();
 }
 
 /*  ============================================================================
@@ -115,7 +124,7 @@ void Field::updateAnchor() {
     warp->SetInputArrayToProcess(0, 0, 0,
                                  vtkDataObject::FIELD_ASSOCIATION_POINTS,
                                  pointData->GetArray(idxU)->GetName());
-    warp->SetInputConnection(portAll);
+    warp->SetInputConnection(reader->GetOutputPort());
     warp->SetScaleFactor(warpScale);
     warp->Update();
 
@@ -124,12 +133,15 @@ void Field::updateAnchor() {
         case 0: {
             lowerLimit = cellData->GetArray(idxDen)->GetRange()[0];
             upperLimit = cellData->GetArray(idxDen)->GetRange()[1];
+            break;
         }
         case 2: {
             upperLimit = cellData->GetArray(idxDen)->GetRange()[1];
+            break;
         }
         case 3: {
             lowerLimit = cellData->GetArray(idxDen)->GetRange()[0];
+            break;
         }
     }
 
@@ -161,14 +173,6 @@ void Field::setLimits(const int& type, const double& lower,
     upperLimit = upper;
 }
 
-/*  ############################################################################
- *  setFieldRange: set the range of the field data in current viewerport
- *  @param  range: the range of the field data  */
-void Field::setFieldRange(double*& range) {
-    dataRange[0] = range[0];
-    dataRange[1] = range[1];
-}
-
 /*  ============================================================================
  *  getPointDataArray: get the point data from the field
  *  @param  name: the name of the point data
@@ -197,14 +201,20 @@ const char* Field::getPointDataArrayName(const int& idx) {
 /*  ########################################################################
  *  addPointData: add a new point data to the field
  *  @param  pointDataArray: the array will be added to the field  */
-void Field::addPointData(vtkDoubleArray* data) { pointData->SetScalars(data); }
+void Field::addPointData(vtkDoubleArray* data) {
+    reader->GetOutput()->GetPointData()->SetScalars(data);
+}
 
 /*  ############################################################################
- *  setPickInputConnection: set the input port for picking cells
- *  @cellIdsCur: the selected cells that will be used for  */
-void Field::setPickInputConnection(const bool isModelMode,
-                                   const bool isHideMode,
-                                   vtkIdTypeArray* cellIdsCur) {
+ *  performCellPick: do the cell picking operation
+ *  @param  isModelMode: picking for model or field?
+ *  @param  isHided: hide cells or extract cells
+ *  @param  cellIdsCur: the selected cells that will be used for picking */
+void Field::performCellPick(const bool isModelMode, const bool isHideMode,
+                            vtkIdTypeArray* cellIdsCur) {
+    /*  update the picking flag  */
+    isPicked = true;
+
     /*  handling for the model or field mode  */
     if (isModelMode) {
         //  using the model mode
@@ -248,4 +258,12 @@ void Field::setPickInputConnection(const bool isModelMode,
  *  @return  the port of the pick filter  */
 vtkAlgorithmOutput* Field::getPickOutputPort() {
     return pickFilter->GetOutputPort();
+}
+
+/*  ============================================================================
+ *  resetCellPick: reset the cell picking  */
+void Field::resetCellPick() {
+    pickArray = cellData->GetArray("PickCells");
+    pickArray->Fill(1.0);
+    isPicked = false;
 }

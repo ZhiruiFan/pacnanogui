@@ -22,9 +22,7 @@
 #include <vtkCamera.h>
 #include <vtkDataSetMapper.h>
 #include <vtkDoubleArray.h>
-#include <vtkExtractSelection.h>
 #include <vtkGenericOpenGLRenderWindow.h>
-#include <vtkImplicitBoolean.h>
 #include <vtkInteractorStyleTrackballCamera.h>
 #include <vtkLookupTable.h>
 #include <vtkNamedColors.h>
@@ -36,8 +34,6 @@
 #include <vtkRenderWindowInteractor.h>
 #include <vtkRenderer.h>
 #include <vtkScalarBarActor.h>
-#include <vtkSelection.h>
-#include <vtkSelectionNode.h>
 #include <vtkTextActor.h>
 #include <vtkTextProperty.h>
 
@@ -69,11 +65,6 @@ private:
 
     Camera* camera;                                // camera configuration
     Post* post;                                    // postprocessing config
-    bool isUseDynamicScalarBar;                    // usign dynamic bar or not?
-    int numIntervalsInScalarBar;                   // number of intervals
-
-    vtkAlgorithmOutput* portCur;                   // current port
-    vtkUnstructuredGrid* ugridCur;                 // current ugrid
 
     QVTKOpenGLNativeWidget* win;                   // main window
     vtkGenericOpenGLRenderWindow* renWin;          // render window
@@ -96,19 +87,11 @@ private:
     Pick* pick;                                    // pick object
     vtkRenderWindowInteractor* interact;           // interactor
     vtkInteractorStyleTrackballCamera* initStyle;  // initial style
-
-    vtkSelectionNode* nodeSelector;                // selection node
-    vtkSelection* cellSelector;                    // cell selection
-    vtkExtractSelection* extractor;                // extract operator
+    vtkAlgorithmOutput* portModelCur;              // current port for model
+    vtkAlgorithmOutput* portFieldCur;              // current port for field
     vtkIdTypeArray* cellIdsCur;                    // currently selected cells
-    vtkIdTypeArray* cellIdsAll;                    // the all selected cells
-    vtkCellLocator* locator;                       // cell locator
-    vtkPoints* points;                             // points in cell
-    double cellCenter[3];                          // cell center location
-    double point[3];                               // point location
 
-    /*  data information  */
-    QMap<int, char> compName = {{0, 'X'}, {1, 'Y'}, {2, 'Z'}};
+    char compName[3] = {'X', 'Y', 'Z'};            // component name
 
 public:
     /*  ########################################################################
@@ -124,9 +107,6 @@ public:
 
     /*  configPost: show the dialog to configure the postprocess  */
     void configPost() { post->show(); };
-
-    /*  showScalarBar: configure the style and show the scalar bar */
-    void showScalarBar();
 
     /*  configure the small widget in the render window  */
     void showCameraAxonometric();  // show the axonometric view
@@ -193,6 +173,10 @@ public:
      *  @param  comp: the component index  */
     void showPointField();
 
+    /*  showFieldGeometry: display the information with respect to the nodes,
+     *  it includes the nodal displacement, reaction force and so on  */
+    void showFieldGeometry();
+
     /*  showCellField: display the information with respect to the elements,
      *  it includes the stress components, design variables in topology
      *  optimization and so on
@@ -206,6 +190,9 @@ private:
      *  @param  file: the model that will be displayed
      *  @param  info: the model information that will be shown  */
     void configStatusBar(QString& file, QString& info);
+
+    /*  configScalarBar: configure the style and show the scalar bar */
+    void configScalarBar();
 
     /*  update: update the displayed object using the current port  */
     void update();

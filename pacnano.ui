@@ -2943,6 +2943,9 @@ QTreeView::branch:open:has-children:has-siblings  {
     <addaction name="actPostOpen"/>
     <addaction name="actPostConfig"/>
     <addaction name="separator"/>
+    <addaction name="actionUndeformed_shape"/>
+    <addaction name="actionDeformed_shape"/>
+    <addaction name="separator"/>
     <addaction name="actColorMap"/>
     <addaction name="actCountourMap"/>
     <addaction name="actSymbolMap"/>
@@ -3314,12 +3317,17 @@ QTreeView::branch:open:has-children:has-siblings  {
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actShowMesh"/>
    <addaction name="actShowGeom"/>
+   <addaction name="actShowMesh"/>
+   <addaction name="separator"/>
+   <addaction name="actionUndeformed_shape"/>
+   <addaction name="actionDeformed_shape"/>
+   <addaction name="separator"/>
    <addaction name="actColorMap"/>
    <addaction name="actCountourMap"/>
    <addaction name="actSymbolMap"/>
    <addaction name="actStreamMap"/>
+   <addaction name="separator"/>
    <addaction name="actionHistory"/>
   </widget>
   <widget class="QToolBar" name="toolBar_6">
@@ -4051,7 +4059,7 @@ QTreeView::branch:open:has-children:has-siblings  {
   <action name="actPostOpen">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/load_database.png</normaloff>:/icons/load_database.png</iconset>
+     <normaloff>:/icons/postprocess.png</normaloff>:/icons/postprocess.png</iconset>
    </property>
    <property name="text">
     <string>Open database</string>
@@ -4513,10 +4521,28 @@ QTreeView::branch:open:has-children:has-siblings  {
   <action name="actColorMap">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/coloredMap.png</normaloff>:/icons/coloredMap.png</iconset>
+     <normaloff>:/icons/coutour.png</normaloff>:/icons/coutour.png</iconset>
    </property>
    <property name="text">
     <string>Colored map</string>
+   </property>
+  </action>
+  <action name="actionDeformed_shape">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/deformed.png</normaloff>:/icons/deformed.png</iconset>
+   </property>
+   <property name="text">
+    <string>Deformed shape</string>
+   </property>
+  </action>
+  <action name="actionUndeformed_shape">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/undeformed.png</normaloff>:/icons/undeformed.png</iconset>
+   </property>
+   <property name="text">
+    <string>Undeformed shape</string>
    </property>
   </action>
  </widget>

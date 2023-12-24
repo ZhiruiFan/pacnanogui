@@ -62,9 +62,12 @@ private:
     double lowerLimit;                     // lower limit of displayed field
     double dataRange[2];                   // range of the current field
 
+    double pickValue;                      // value for picked sequence
+    bool isPicked;                         // has cells been picked
     vtkThreshold* pickFilter;              // filter for picking
     vtkDataArray* pickArray;               // array for picking
-    double pickValue;                      // value for picked sequence
+
+    char compName[3] = {'X', 'Y', 'Z'};    // component name
 
 public:
     /*  ########################################################################
@@ -111,10 +114,6 @@ public:
      *  @return  the point data with specified index  */
     vtkDataArray* getPointDataArray(const int& idx);
 
-    /*  setFieldRange: set the range of the field data in current viewerport
-     *  @param  range: the range of the field data  */
-    void setFieldRange(double*& range);
-
     /*  getPointDataArrayName: get the name of the point data according to the
      *  specified index
      *  @param  idx: the index of the point data
@@ -123,14 +122,24 @@ public:
 
 public:
     /*  ########################################################################
-     *  setPickInputConnection: set the input port for picking cells
-     *  @cellIdsCur: the selected cells that will be used for  */
-    void setPickInputConnection(const bool isModelMode, const bool isHided,
-                                vtkIdTypeArray* cellIdsCur);
+     *  performCellPick: do the cell picking operation
+     *  @param  isModelMode: picking for model or field?
+     *  @param  isHided: hide cells or extract cells
+     *  @param  cellIdsCur: the selected cells that will be used for picking */
+    void performCellPick(const bool isModelMode, const bool isHided,
+                         vtkIdTypeArray* cellIdsCur);
 
     /*  getPickOutputPort: get the output port after picking operation
      *  @return  the port of the pick filter  */
     vtkAlgorithmOutput* getPickOutputPort();
+
+    /*  resetCellPick: reset the cell picking  */
+    void resetCellPick();
+
+    /*  getCurrentPointDataRange: get the currently displayed scalar range
+     *  @param  idx: the index of the point data
+     *  @param  comp: the component in the point data  */
+    double* getCurrentPointDataRange(const int idx, const int comp);
 
 public:
     /*  ########################################################################

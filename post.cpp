@@ -30,7 +30,7 @@ Post::Post(QWidget *parent) : QDialog(parent), ui(new Ui::Post) {
     /*  connect to the OK button  */
     connect(ui->btnOk, &QPushButton::clicked, this, [&]() {
         //  warp scale
-        if (ui->useDeform->isChecked())
+        if (ui->useUndeform->isChecked())
             warpScale = 0.0;
         else
             warpScale = ui->warpScale->value();
@@ -61,14 +61,6 @@ Post::Post(QWidget *parent) : QDialog(parent), ui(new Ui::Post) {
             lowerLimit    = 0.0;
             upperLimit    = 1.0;
         }
-
-        //  scalar bar
-        if (ui->useUniformScarlarBar->isChecked()) {
-            isDynamicScalarBar = false;
-        } else {
-            isDynamicScalarBar = true;
-        }
-        numIntervals = ui->numIntervals->value();
 
         //  active the accept signal
         accept();
@@ -106,30 +98,29 @@ Post::~Post() { delete ui; }
  *  reset: reset the diag to the original  */
 void Post::reset() {
     /*  Warping configuration  */
+    warpScale = 0.0;
     ui->useUndeform->setChecked(true);
     ui->useDeform->setChecked(false);
     ui->warpScale->setDisabled(true);
-    ui->warpScale->setValue(0.0);
+    ui->warpScale->setValue(warpScale);
 
     /*  Threshold switch  */
+    thresholdFlag = 0;
     ui->useNoLimit->setChecked(true);
 
     /*  Lower limit  */
+    lowerLimit = 0.0;
     ui->useLowerLimit->setChecked(false);
     ui->useLowerLimit->setDisabled(true);
     ui->lowerLimit->setDisabled(true);
-    ui->lowerLimit->setValue(0.0);
+    ui->lowerLimit->setValue(lowerLimit);
 
     /*  Upper limit  */
+    upperLimit = 1.0;
     ui->useUpperLimit->setChecked(false);
     ui->useUpperLimit->setDisabled(true);
     ui->upperLimit->setDisabled(true);
-    ui->upperLimit->setValue(1.0);
-
-    /*  scalar table  */
-    ui->useUniformScarlarBar->setChecked(true);
-    ui->useDynamicScalarBar->setChecked(false);
-    ui->numIntervals->setValue(12);
+    ui->upperLimit->setValue(upperLimit);
 }
 
 /*  ############################################################################
@@ -153,21 +144,3 @@ double Post::getLowerLimit() { return lowerLimit; }
  *  getUpperLimit: get the value of the upper limit
  *  @return  upper limit value  */
 double Post::getUpperLimit() { return upperLimit; }
-
-/*  ============================================================================
- *  isUseDynamicScalarBar: get the status of the scarlar bar that is
- *  uniform or dynamic
- *  @return  true for dynamic bar, false for uniform bar  */
-bool Post::isUseDynamicScalarBar() { return isDynamicScalarBar; }
-
-/*  ============================================================================
- *  isUseUniformScalarBar: get the status of the scarlar bar that is
- *  uniform or dynamic
- *  @return  true for uniform bar, false for dynamic bar  */
-bool Post::isUseUniformScalarBar() { return !isDynamicScalarBar; }
-
-/*  ============================================================================
- *  getNumberOfIntervalsInScalarBar: return the number of intervals in
- *  the scalar bar
- *  @return  the number of invervals in Scalar bar  */
-int Post::getNumberOfIntervalsInScalarBar() { return numIntervals; }
