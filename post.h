@@ -34,6 +34,9 @@ private:
     double lowerLimit;  // lower limit of threshold
     double upperLimit;  // upper limit of threshold
 
+    int numIntervals;   // number of intervals
+    bool isAutoLegend;  // if using automatic legend range
+
 public:
     /*  ########################################################################
      *  constructor: create the Post object  */
@@ -61,6 +64,14 @@ public:
     /*  getUpperLimit: get the value of the upper limit
      *  @return  upper limit value  */
     double getUpperLimit();
+
+    /*  getNumIntervals: get the number of intervals in the legend
+     *  @return  the number of the intervals   */
+    int getNumIntervals();
+
+    /*  isAutoLegend: is the legend range is automatic or fixed
+     *  @return   get the status of the legend range  */
+    bool isAutoLegend();
 
 private slots:
     /*  ########################################################################

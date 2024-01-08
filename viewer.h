@@ -37,7 +37,6 @@
 #include <vtkTextActor.h>
 #include <vtkTextProperty.h>
 
-#include <QList>
 #include <QObject>
 #include <QWidget>
 #include <sstream>
@@ -90,6 +89,9 @@ private:
     vtkAlgorithmOutput* portModelCur;              // current port for model
     vtkAlgorithmOutput* portFieldCur;              // current port for field
     vtkIdTypeArray* cellIdsCur;                    // currently selected cells
+
+    int numIntervals;                              // number of legend intervals
+    bool isAutoLegend;                             // auto legend range or not
 
     char compName[3] = {'X', 'Y', 'Z'};            // component name
 

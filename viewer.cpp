@@ -86,11 +86,15 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     showCameraAxonometric();
 
     /*  postprocess configuration  */
-    post = new Post(nullptr);
+    post         = new Post(nullptr);
+    numIntervals = 2;
+    isAutoLegend = false;
     connect(post, &Post::accepted, this, [&]() {
         field->setWarpScale(post->getWarpScale());
         field->setLimits(post->getLimitType(), post->getLowerLimit(),
                          post->getUpperLimit());
+        numIntervals = post->getNumIntervals();
+        isAutoLegend = post->isAutoLegend();
     });
 }
 
