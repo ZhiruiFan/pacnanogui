@@ -22,14 +22,14 @@ pacnano::pacnano(QWidget* parent) : QMainWindow(parent), ui(new Ui::pacnano) {
     ui->setupUi(this);
 
     /*  Initialize the mode flags  */
-    USE_MODEL_MODE = true;
-    USE_FIELD_MODE = false;
+    USE_MODEL_MODE   = true;
+    USE_FIELD_MODE   = false;
 
     USE_HIDE_MODE    = true;
     USE_EXTRACT_MODE = false;
 
-    USE_CELL_MODE = true;
-    USE_NODE_MODE = false;
+    USE_CELL_MODE    = true;
+    USE_NODE_MODE    = false;
 
     /*  Open forder  */
     openDir = new Open(this, 0);
@@ -226,7 +226,7 @@ void pacnano::setupMaterialCreation() {
 void pacnano::setupRenderWindow() {
     /*  Create the render window  */
     renWin       = new Viewer(ui->viewWindow);
-    QString file = "/home/zhirui.fan/Documents/research/TopOpt-301-1.vtu";
+    QString file = "/home/zhirui.fan/Documents/code/TopOpt-301-1.vtu";
     // QString file = "/Volumes/opt/Documents/code/TopOpt-301-1.vtu";
     Field* field = new Field(file);
     renWin->setInputData(field);

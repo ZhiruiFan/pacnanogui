@@ -466,6 +466,7 @@ void Viewer::handleCellPick(const bool& pickMode) {
 void Viewer::showCameraAxonometric() {
     /*  reset to camera to the original  */
     render->GetActiveCamera()->DeepCopy(originCamera);
+    render->GetActiveCamera()->Elevation(45.0);
     render->GetActiveCamera()->Azimuth(45.0);
     render->GetActiveCamera()->Dolly(1.0);
     render->ResetCamera();
@@ -525,6 +526,7 @@ void Viewer::configStatusBar(QString& file, QString& info) {
     std::time_t curTime_t   = std::chrono::system_clock::to_time_t(curTime);
     struct std::tm* locTime = std::localtime(&curTime_t);
     time.clear();
+    time.str("");
     time << locTime->tm_year + 1900 << "-" << locTime->tm_mon + 1 << "-"
          << locTime->tm_mday << ":" << locTime->tm_hour << ":"
          << locTime->tm_min << ":" << locTime->tm_sec;
@@ -562,7 +564,7 @@ void Viewer::configScalarBar() {
     scalarBar->SetNumberOfLabels(12);
 
     /*  set the position  */
-    scalarBar->SetPosition(0.02, 0.60);
+    scalarBar->SetPosition(0.04, 0.60);
     scalarBar->SetMaximumWidthInPixels(70);
     scalarBar->SetMaximumHeightInPixels(200);
 

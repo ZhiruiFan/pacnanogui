@@ -101,8 +101,8 @@
         <file>icons/rejected.png</file>
         <file>icons/load_database.png</file>
         <file>icons/coloredMap.png</file>
-        <file>icons/deformed.png</file>
+        <file>icons/geometry.png</file>
+        <file>icons/defromed.png</file>
         <file>icons/undeformed.png</file>
-        <file>icons/coutour.png</file>
     </qresource>
 </RCC>

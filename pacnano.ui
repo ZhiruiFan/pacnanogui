@@ -690,7 +690,7 @@ QTreeView::branch:open:has-children:has-siblings  {
               <number>0</number>
              </property>
              <property name="currentIndex">
-              <number>2</number>
+              <number>0</number>
              </property>
              <widget class="QWidget" name="blankPage"/>
              <widget class="QWidget" name="hideCells">
@@ -4231,7 +4231,7 @@ QTreeView::branch:open:has-children:has-siblings  {
   <action name="actShowGeom">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/show_geometry.png</normaloff>:/icons/show_geometry.png</iconset>
+     <normaloff>:/icons/geometry.png</normaloff>:/icons/geometry.png</iconset>
    </property>
    <property name="text">
     <string>Show geometry</string>
@@ -4521,7 +4521,7 @@ QTreeView::branch:open:has-children:has-siblings  {
   <action name="actColorMap">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/coutour.png</normaloff>:/icons/coutour.png</iconset>
+     <normaloff>:/icons/coloredMap.png</normaloff>:/icons/coloredMap.png</iconset>
    </property>
    <property name="text">
     <string>Colored map</string>
@@ -4530,7 +4530,7 @@ QTreeView::branch:open:has-children:has-siblings  {
   <action name="actionDeformed_shape">
    <property name="icon">
     <iconset resource="icons.qrc">
-     <normaloff>:/icons/deformed.png</normaloff>:/icons/deformed.png</iconset>
+     <normaloff>:/icons/defromed.png</normaloff>:/icons/defromed.png</iconset>
    </property>
    <property name="text">
     <string>Deformed shape</string>
