@@ -62,6 +62,10 @@ Post::Post(QWidget *parent) : QDialog(parent), ui(new Ui::Post) {
             upperLimit    = 1.0;
         }
 
+        //  legend configuration
+        numIntervals = ui->numIntervals->value();
+        isAutoLegend = ui->useAutoRange->isChecked() ? true : false;
+
         //  active the accept signal
         accept();
     });
@@ -121,6 +125,11 @@ void Post::reset() {
     ui->useUpperLimit->setDisabled(true);
     ui->upperLimit->setDisabled(true);
     ui->upperLimit->setValue(upperLimit);
+
+    /*  Legend configuration  */
+    ui->numIntervals->setValue(12);
+    ui->useFixRange->setChecked(true);
+    ui->useAutoRange->setChecked(false);
 }
 
 /*  ############################################################################
@@ -144,3 +153,11 @@ double Post::getLowerLimit() { return lowerLimit; }
  *  getUpperLimit: get the value of the upper limit
  *  @return  upper limit value  */
 double Post::getUpperLimit() { return upperLimit; }
+
+/*  getNumIntervals: get the number of intervals in the legend
+ *  @return  the number of the intervals   */
+int Post::getNumIntervals() { return numIntervals; }
+
+/*  isUseAutoLegend: is the legend range is automatic or fixed
+ *  @return   get the status of the legend range  */
+bool Post::isUseAutoLegend() { return isAutoLegend; }

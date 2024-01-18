@@ -154,6 +154,10 @@ void Field::updateAnchor() {
     denFilter->SetLowerThreshold(lowerLimit);
     denFilter->SetUpperThreshold(upperLimit);
     denFilter->Update();
+
+    /*  update the data and port  */
+    ugridCur = denFilter->GetOutput();
+    portCur  = denFilter->GetOutputPort();
 }
 
 /*  ############################################################################
@@ -202,7 +206,8 @@ const char* Field::getPointDataArrayName(const int& idx) {
  *  addPointData: add a new point data to the field
  *  @param  pointDataArray: the array will be added to the field  */
 void Field::addPointData(vtkDoubleArray* data) {
-    reader->GetOutput()->GetPointData()->SetScalars(data);
+    pointData = reader->GetOutput()->GetPointData();
+    pointData->SetScalars(data);
 }
 
 /*  ############################################################################
@@ -251,6 +256,65 @@ void Field::performCellPick(const bool isModelMode, const bool isHideMode,
     pickFilter->SetInputArrayToProcess(
         0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_CELLS, "PickCells");
     pickFilter->Update();
+
+    /*  update the data and port  */
+    ugridCur = pickFilter->GetOutput();
+    portCur  = pickFilter->GetOutputPort();
+}
+
+/*  ============================================================================
+ *  resetCellPick: reset the cell picking  */
+void Field::resetCellPick() {
+    /*  reset the pick array  */
+    pickArray = cellData->GetArray("PickCells");
+    pickArray->Fill(1.0);
+
+    /*  update the port and data  */
+    ugridCur  = reader->GetOutput();
+    portCur   = reader->GetOutputPort();
+    pointData = ugrid->GetPointData();
+    cellData  = ugrid->GetCellData();
+
+    /*  update the anchor  */
+    updateAnchor();
+
+    /*  update the flag  */
+    isPicked = false;
+}
+
+/*  ########################################################################
+ *  getPathName: get the full path name of the field varaible  */
+QString& Field::getPathName() { return name; }
+
+/*  ############################################################################
+ *  getInputPort: get the initial port, i.e., the input port of the field
+ *  variables  */
+vtkAlgorithmOutput* Field::getInputPort() { return portAll; }
+
+/*  getInputData: get the initial unstructured grid of the field
+ *  @return  the ugrid  */
+vtkUnstructuredGrid* Field::getInputData() { return reader->GetOutput(); }
+
+/*  ============================================================================
+ *  getWarpOutputPort: get the output port of the warper
+ *  @return  the data port after warping operation  */
+vtkAlgorithmOutput* Field::getWarpOutputPort() { return warp->GetOutputPort(); }
+
+/*  getWarpOutput: get the output data of the warper
+ *  @return  the data port after warping operation  */
+vtkPointSet* Field::getWarpOutput() { return warp->GetOutput(); }
+
+/*  ============================================================================
+ *  getThresholdOutputPort: get the output port of the threshold
+ *  @return  the data port after threshold operation  */
+vtkAlgorithmOutput* Field::getThresholdOutputPort() {
+    return denFilter->GetOutputPort();
+}
+
+/*  getThresholdOutput: get the output ugrid of the threshold
+ *  @return  the data after threshold operation  */
+vtkUnstructuredGrid* Field::getThresholdOutput() {
+    return denFilter->GetOutput();
 }
 
 /*  ============================================================================
@@ -260,10 +324,13 @@ vtkAlgorithmOutput* Field::getPickOutputPort() {
     return pickFilter->GetOutputPort();
 }
 
+/*  getPickOutput: get the output data after picking operation
+ *  @return  the data after the pick filter  */
+vtkUnstructuredGrid* Field::getPickOutput() { return pickFilter->GetOutput(); }
+
 /*  ============================================================================
- *  resetCellPick: reset the cell picking  */
-void Field::resetCellPick() {
-    pickArray = cellData->GetArray("PickCells");
-    pickArray->Fill(1.0);
-    isPicked = false;
+ *  getCellDataArray: get the array amoung the all cell data
+ *  @param  idx: the index of the cell data array  */
+vtkDataArray* Field::getCellDataArray(const int& idx) {
+    return cellData->GetArray(idx);
 }

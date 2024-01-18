@@ -206,14 +206,14 @@
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_8">
         <item>
-         <widget class="QRadioButton" name="radioButton">
+         <widget class="QRadioButton" name="useFixRange">
           <property name="text">
            <string>Fixed range</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QRadioButton" name="radioButton_2">
+         <widget class="QRadioButton" name="useAutoRange">
           <property name="text">
            <string>Automatic range</string>
           </property>
@@ -243,7 +243,14 @@
          </widget>
         </item>
         <item>
-         <widget class="QSpinBox" name="spinBox"/>
+         <widget class="QSpinBox" name="numIntervals">
+          <property name="minimum">
+           <number>2</number>
+          </property>
+          <property name="maximum">
+           <number>24</number>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>

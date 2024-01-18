@@ -133,6 +133,10 @@ public:
      *  @return  the port of the pick filter  */
     vtkAlgorithmOutput* getPickOutputPort();
 
+    /*  getPickOutput: get the output data after picking operation
+     *  @return  the data after the pick filter  */
+    vtkUnstructuredGrid* getPickOutput();
+
     /*  resetCellPick: reset the cell picking  */
     void resetCellPick();
 
@@ -144,32 +148,35 @@ public:
 public:
     /*  ########################################################################
      *  getPathName: get the full path name of the field varaible  */
-    QString& getPathName() { return name; }
+    QString& getPathName();
 
     /*  getInputPort: get the initial port, i.e., the input port of the field
      *  variables  */
-    vtkAlgorithmOutput* getInputPort() { return portAll; }
+    vtkAlgorithmOutput* getInputPort();
 
     /*  getInputData: get the initial unstructured grid of the field
      *  @return  the ugrid  */
-    vtkUnstructuredGrid* getInputData() { return ugrid; }
+    vtkUnstructuredGrid* getInputData();
 
-    /*  getWarpOutputPort: get the output port of the warper  */
-    vtkAlgorithmOutput* getWarpOutputPort() { return warp->GetOutputPort(); }
+    /*  getWarpOutputPort: get the output port of the warper
+     *  @return  the data port after warping operation  */
+    vtkAlgorithmOutput* getWarpOutputPort();
 
-    /*  getThresholdOutputPort: get the output port of the threshold  */
-    vtkAlgorithmOutput* getThresholdOutputPort() {
-        return denFilter->GetOutputPort();
-    }
+    /*  getWarpOutput: get the output data of the warper
+     *  @return  the data port after warping operation  */
+    vtkPointSet* getWarpOutput();
 
-    /*  getThresholdOutput: get the output ugrid of the threshold  */
-    vtkUnstructuredGrid* getThresholdOutput() { return denFilter->GetOutput(); }
+    /*  getThresholdOutputPort: get the output port of the threshold
+     *  @return  the data port after threshold operation  */
+    vtkAlgorithmOutput* getThresholdOutputPort();
+
+    /*  getThresholdOutput: get the output ugrid of the threshold
+     *  @return  the data after threshold operation  */
+    vtkUnstructuredGrid* getThresholdOutput();
 
     /*  getCellDataArray: get the array amoung the all cell data
      *  @param  idx: the index of the cell data array  */
-    vtkDataArray* getCellDataArray(const int& idx) {
-        return cellData->GetArray(idx);
-    }
+    vtkDataArray* getCellDataArray(const int& idx);
 
 private:
     /*  createNodalSet: create the node set using the given node sequence or by

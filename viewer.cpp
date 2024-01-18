@@ -67,7 +67,7 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     /*  Status bar  */
     status = vtkTextActor::New();
     status->SetTextScaleModeToNone();
-    status->GetTextProperty()->SetFontSize(15);
+    status->GetTextProperty()->SetFontSize(16);
     status->GetTextProperty()->SetFontFamilyToCourier();
     status->GetTextProperty()->SetColor(0.0, 0.0, 0.0);
     status->SetTextScaleModeToNone();
@@ -87,14 +87,17 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
 
     /*  postprocess configuration  */
     post         = new Post(nullptr);
-    numIntervals = 2;
+    numIntervals = 12;
     isAutoLegend = false;
     connect(post, &Post::accepted, this, [&]() {
+        //  assign parameters
         field->setWarpScale(post->getWarpScale());
         field->setLimits(post->getLimitType(), post->getLowerLimit(),
                          post->getUpperLimit());
         numIntervals = post->getNumIntervals();
-        isAutoLegend = post->isAutoLegend();
+        isAutoLegend = post->isUseAutoLegend();
+        //  update viewerport
+        updatePointField();
     });
 }
 
@@ -175,9 +178,10 @@ void Viewer::showCompleteModel() {
     /*  check the status  */
     if (isModelLoaded) {
         /*  reset the unstructured grid to original  */
-        portModelCur = field->getInputPort();
-        portFieldCur = field->getThresholdOutputPort();
         field->resetCellPick();
+        portModelCur  = field->getInputPort();
+        portFieldCur  = field->getThresholdOutputPort();
+        ugridFieldCur = field->getInputData();
         update();
     }
 }
@@ -300,11 +304,9 @@ void Viewer::initPointField(const int& idx, const int& comp) {
     //  assign the name of the components
     dtCur->SetName(name.str().c_str());
     field->addPointData(dtCur);
-    field->updateAnchor();
 
     /*  Create the LOOKUP table  */
     lut->SetHueRange(0.667, 0.0);
-    lut->SetNumberOfTableValues(12);
     lut->SetTableRange(dtCur->GetRange());
     lut->Build();
 
@@ -318,7 +320,23 @@ void Viewer::initPointField(const int& idx, const int& comp) {
     }
 
     /*  set the input port of the field  */
-    portFieldCur = field->getThresholdOutputPort();
+    field->resetCellPick();
+    updatePointField();
+}
+
+/*  ============================================================================
+ *  updatePointField: update filed information with respect to the nodes,
+ *  it includes the nodal displacement, reaction force and so on  */
+void Viewer::updatePointField() {
+    //  update the anchor
+    field->resetCellPick();
+    ugridFieldCur = field->getThresholdOutput();
+    portFieldCur  = field->getThresholdOutputPort();
+
+    //  update the scalar bar
+    configScalarBar();
+
+    //  update the viewerport
     update();
 }
 
@@ -336,6 +354,18 @@ void Viewer::showPointField() {
     /*  get the name of the field  */
     std::stringstream name;
     name << field->getPointDataArrayName(index) << ":" << compName[comp];
+
+    /*  Create the LOOKUP table  */
+    //  update the range of field data
+    if (isAutoLegend) {
+        lut->SetNumberOfTableValues(numIntervals);
+        lut->SetTableRange(ugridFieldCur->GetPointData()
+                               ->GetArray(name.str().c_str())
+                               ->GetRange());
+    }
+    //  update the lookup table
+    lut->SetNumberOfTableValues(numIntervals);
+    lut->Build();
 
     /*  setup the mapper  */
     dtMap->SetInputConnection(portFieldCur);
@@ -453,7 +483,8 @@ void Viewer::handleCellPick(const bool& pickMode) {
         if (isModelMode) {
             portModelCur = field->getPickOutputPort();
         } else {
-            portFieldCur = field->getPickOutputPort();
+            portFieldCur  = field->getPickOutputPort();
+            ugridFieldCur = field->getPickOutput();
         }
 
         /*  turn off picker  */
@@ -565,12 +596,16 @@ void Viewer::configScalarBar() {
     scalarBar->GetLabelTextProperty()->SetItalic(0);
     scalarBar->GetLabelTextProperty()->SetJustificationToLeft();
     scalarBar->GetLabelTextProperty()->SetVerticalJustificationToBottom();
-    scalarBar->SetNumberOfLabels(12);
+    scalarBar->SetNumberOfLabels(numIntervals);
 
     /*  set the position  */
-    scalarBar->SetPosition(0.04, 0.60);
+    int* renSize      = renWin->GetSize();
+    int legendHight   = 17 * numIntervals;
+    double leftMargin = 32.0 / renSize[0];
+    double topMargin  = 1.0 - (legendHight + 32.0) / renSize[1];
+    scalarBar->SetPosition(leftMargin, topMargin);
     scalarBar->SetMaximumWidthInPixels(70);
-    scalarBar->SetMaximumHeightInPixels(200);
+    scalarBar->SetMaximumHeightInPixels(legendHight);
 
     /*  label data format  */
     scalarBar->SetLabelFormat("%.4e");

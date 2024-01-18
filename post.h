@@ -69,9 +69,9 @@ public:
      *  @return  the number of the intervals   */
     int getNumIntervals();
 
-    /*  isAutoLegend: is the legend range is automatic or fixed
+    /*  isUseAutoLegend: is the legend range is automatic or fixed
      *  @return   get the status of the legend range  */
-    bool isAutoLegend();
+    bool isUseAutoLegend();
 
 private slots:
     /*  ########################################################################

@@ -88,6 +88,7 @@ private:
     vtkInteractorStyleTrackballCamera* initStyle;  // initial style
     vtkAlgorithmOutput* portModelCur;              // current port for model
     vtkAlgorithmOutput* portFieldCur;              // current port for field
+    vtkUnstructuredGrid* ugridFieldCur;            // current ugrid for field
     vtkIdTypeArray* cellIdsCur;                    // currently selected cells
 
     int numIntervals;                              // number of legend intervals
@@ -169,10 +170,12 @@ public:
      *  @param  comp: the component of the point data that will be extracted  */
     void initPointField(const int& idx, const int& comp);
 
+    /*  updatePointField: update filed information with respect to the nodes,
+     *  it includes the nodal displacement, reaction force and so on  */
+    void updatePointField();
+
     /*  showPointField: display the information with respect to the nodes,
-     *  it includes the nodal displacement, reaction force and so on
-     *  @param  idx: the index of the component in the data set
-     *  @param  comp: the component index  */
+     *  it includes the nodal displacement, reaction force and so on  */
     void showPointField();
 
     /*  showFieldGeometry: display the information with respect to the nodes,
