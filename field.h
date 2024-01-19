@@ -20,6 +20,7 @@
 /*  INCLUDES  */
 #include <vtkAlgorithmOutput.h>
 #include <vtkCellData.h>
+#include <vtkContourFilter.h>
 #include <vtkDoubleArray.h>
 #include <vtkPointData.h>
 #include <vtkThreshold.h>
@@ -66,6 +67,8 @@ private:
     bool isPicked;                         // has cells been picked
     vtkThreshold* pickFilter;              // filter for picking
     vtkDataArray* pickArray;               // array for picking
+
+    vtkContourFilter* contourFilter;       // contour ploting object
 
     char compName[3] = {'X', 'Y', 'Z'};    // component name
 
@@ -177,6 +180,19 @@ public:
     /*  getCellDataArray: get the array amoung the all cell data
      *  @param  idx: the index of the cell data array  */
     vtkDataArray* getCellDataArray(const int& idx);
+
+public:
+    /*  ########################################################################
+     *  initContour: initialize the environment for the contour plot*/
+    void initContour();
+
+    /*  getContourOutput: get the output data of the contour
+     *  @return  the ouput data after contour filter  */
+    vtkPolyData* getContourOutput();
+
+    /*  getContourOutputPort: get the port with respect to contour filter
+     *  @return  the port after contour filter  */
+    vtkAlgorithmOutput* getContourOutputPort();
 
 private:
     /*  createNodalSet: create the node set using the given node sequence or by

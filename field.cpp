@@ -55,6 +55,9 @@ Field::Field(QString& _name) {
     denFilter  = vtkThreshold::New();
     pickFilter = vtkThreshold::New();
 
+    /*  coutour filter  */
+    contourFilter = vtkContourFilter::New();
+
     /*  initialize the anchor  */
     limitType  = 0;
     warpScale  = 0.0;
@@ -333,4 +336,15 @@ vtkUnstructuredGrid* Field::getPickOutput() { return pickFilter->GetOutput(); }
  *  @param  idx: the index of the cell data array  */
 vtkDataArray* Field::getCellDataArray(const int& idx) {
     return cellData->GetArray(idx);
+}
+
+/*  ============================================================================
+ *  getContourOutput: get the output data of the contour
+ *  @return  the ouput data after contour filter  */
+vtkPolyData* Field::getContourOutput() { return contourFilter->GetOutput(); }
+
+/*  getContourOutputPort: get the port with respect to contour filter
+ *  @return  the port after contour filter  */
+vtkAlgorithmOutput* Field::getContourOutputPort() {
+    return contourFilter->GetOutputPort();
 }
