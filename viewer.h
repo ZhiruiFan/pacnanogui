@@ -18,15 +18,18 @@
 
 #include <QVTKOpenGLNativeWidget.h>
 #include <vtkActor.h>
+#include <vtkArrowSource.h>
 #include <vtkAxesActor.h>
 #include <vtkCamera.h>
 #include <vtkDataSetMapper.h>
 #include <vtkDoubleArray.h>
 #include <vtkGenericOpenGLRenderWindow.h>
+#include <vtkGlyph3D.h>
 #include <vtkInteractorStyleTrackballCamera.h>
 #include <vtkLookupTable.h>
 #include <vtkNamedColors.h>
 #include <vtkOrientationMarkerWidget.h>
+#include <vtkPolyDataMapper.h>
 #include <vtkProp.h>
 #include <vtkProperty.h>
 #include <vtkProperty2D.h>
@@ -90,6 +93,10 @@ private:
     vtkAlgorithmOutput* portFieldCur;              // current port for field
     vtkUnstructuredGrid* ugridFieldCur;            // current ugrid for field
     vtkIdTypeArray* cellIdsCur;                    // currently selected cells
+
+    vtkArrowSource* arrow;                         // arrow source object
+    vtkGlyph3D* gly;                               // show the glyph
+    vtkPolyDataMapper* polyMapper;                 // polydata mapper
 
     int numIntervals;                              // number of legend intervals
     bool isAutoLegend;                             // auto legend range or not
@@ -187,6 +194,10 @@ public:
      *  optimization and so on
      *  @param  idx: the index of the component in the data set  */
     void showCellField(const int& idx);
+
+public:
+    /*  showArrowField: show the data using the arrow  */
+    void showArrowField();
 
 private:
     /*  ########################################################################

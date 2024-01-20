@@ -75,6 +75,11 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     status->GetPositionCoordinate()->SetValue(0.2, 0.1);
     render->AddActor(status);
 
+    /*  arrow viewer  */
+    gly        = vtkGlyph3D::New();
+    arrow      = vtkArrowSource::New();
+    polyMapper = vtkPolyDataMapper::New();
+
     /*  lookup table and scalar bar  */
     lut               = vtkLookupTable::New();
     scalarBar         = vtkScalarBarActor::New();
@@ -364,7 +369,6 @@ void Viewer::showPointField() {
                                ->GetRange());
     }
     //  update the lookup table
-    lut->SetNumberOfTableValues(numIntervals);
     lut->Build();
 
     /*  setup the mapper  */
@@ -382,6 +386,45 @@ void Viewer::showPointField() {
     actor->GetProperty()->SetEdgeVisibility(0);
     actor->GetProperty()->SetLineWidth(0.0);
     render->AddActor2D(scalarBar);
+
+    /*  Render the window  */
+    renWin->Render();
+}
+
+/*  showArrowField: show the data using the arrow  */
+void Viewer::showArrowField() {
+    /*  get the field index and its component  */
+    int index = recorder[1];
+    int comp  = recorder[2];
+
+    /*  get the name of the field  */
+    std::stringstream name;
+    name << field->getPointDataArrayName(index) << ":" << compName[comp];
+
+    /*  setup the mapper  */
+    gly->SetInputConnection(portFieldCur);
+    gly->SetSourceConnection(arrow->GetOutputPort());
+    gly->SetScaleFactor(100.0);
+    gly->SetVectorModeToUseVector();
+    gly->SetInputArrayToProcess(0, 0, 0,
+                                vtkDataObject::FIELD_ASSOCIATION_POINTS,
+                                field->getPointDataArrayName(index));
+    polyMapper->AddInputConnection(gly->GetOutputPort());
+    polyMapper->SetLookupTable(lut);
+    polyMapper->ScalarVisibilityOn();
+    polyMapper->SetScalarModeToUsePointFieldData();
+    polyMapper->SelectColorArray(name.str().c_str());
+    polyMapper->SetScalarRange(lut->GetRange());
+    actor->SetMapper(polyMapper);
+
+    /*  configure the scalar bar  */
+    if (!isScalarBarPlayed) {
+        configScalarBar();
+        scalarBar->SetLookupTable(lut);
+        scalarBar->SetTitle(name.str().c_str());
+        render->AddActor(scalarBar);
+        isScalarBarPlayed = true;
+    }
 
     /*  Render the window  */
     renWin->Render();

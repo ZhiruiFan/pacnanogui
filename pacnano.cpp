@@ -225,9 +225,10 @@ void pacnano::setupMaterialCreation() {
  *  viewport and so on   */
 void pacnano::setupRenderWindow() {
     /*  Create the render window  */
-    renWin       = new Viewer(ui->viewWindow);
-    QString file = "/home/zhirui.fan/Documents/code/TopOpt-301-1.vtu";
+    renWin = new Viewer(ui->viewWindow);
+    // QString file = "/home/zhirui.fan/Documents/code/TopOpt-301-1.vtu";
     // QString file = "/Volumes/opt/Documents/code/TopOpt-301-1.vtu";
+    QString file = "/Users/zhirui.fan/Documents/code/TopOpt-301-1.vtu";
     Field* field = new Field(file);
     renWin->setInputData(field);
 
@@ -263,6 +264,8 @@ void pacnano::setupRenderWindow() {
             [&]() { renWin->showMesh(); });
     connect(ui->actColorMap, &QAction::triggered, renWin,
             [&]() { renWin->initPointField(0, 0); });
+    connect(ui->actSymbolMap, &QAction::triggered, renWin,
+            [&]() { renWin->showArrowField(); });
 
     /*  ************************************************************************
      *  connect to selection  */
