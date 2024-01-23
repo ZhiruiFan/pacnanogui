@@ -39,6 +39,8 @@
 #include <vtkScalarBarActor.h>
 #include <vtkTextActor.h>
 #include <vtkTextProperty.h>
+#include <vtkTransform.h>
+#include <vtkTransformFilter.h>
 
 #include <QObject>
 #include <QWidget>
@@ -48,6 +50,7 @@
 #include "field.h"
 #include "pick.h"
 #include "post.h"
+#include "reflect.h"
 
 /*  ############################################################################
  *  class Viewer: the class to define the visualization interface, which
@@ -61,6 +64,8 @@ private:
     int recorder[3];                               // filed varaible recorder
     bool isModelCreated;                           // field assignment flag
     bool isModelLoaded;                            // has model loaded
+    bool isFieldLoaded;                            // has field loaded
+    bool isInitViewerPort;                         // flag for initialize vp
     bool isModelMode;                              // model mode is shown
     bool isFieldMode;                              // field mode is shown
     bool isPickHideModel;                          // will hide picked cells
@@ -98,6 +103,10 @@ private:
     vtkGlyph3D* gly;                               // show the glyph
     vtkPolyDataMapper* polyMapper;                 // polydata mapper
 
+    Reflect* reflect;                              // reflect object
+    vtkTransform* transform;                       // transformer
+    vtkTransformFilter* refOperate;                // mirror the structure
+
     int numIntervals;                              // number of legend intervals
     bool isAutoLegend;                             // auto legend range or not
 
@@ -117,6 +126,9 @@ public:
 
     /*  configPost: show the dialog to configure the postprocess  */
     void configPost() { post->show(); };
+
+    /*  configReflect: show the dialog to configure the reflection  */
+    void configReflect() { reflect->show(); }
 
     /*  configure the small widget in the render window  */
     void showCameraAxonometric();  // show the axonometric view
@@ -181,13 +193,17 @@ public:
      *  it includes the nodal displacement, reaction force and so on  */
     void updatePointField();
 
-    /*  showPointField: display the information with respect to the nodes,
+    /*  showColorField: display the information with respect to the nodes,
      *  it includes the nodal displacement, reaction force and so on  */
-    void showPointField();
+    void showColorField();
 
     /*  showFieldGeometry: display the information with respect to the nodes,
      *  it includes the nodal displacement, reaction force and so on  */
     void showFieldGeometry();
+
+    /*  showMirrorField: show the reflected field according to the specified
+     *  parameters  */
+    void showMirrorField();
 
     /*  showCellField: display the information with respect to the elements,
      *  it includes the stress components, design variables in topology

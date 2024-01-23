@@ -44,7 +44,8 @@ Open::Open(QWidget *parent, const int type)
            << "Python Script (*.py, *.pyc)"
            << "Pacnano input (*.in)"
            << "Pacnano output (*.ou)"
-           << "Pacnano in&out (*.in, *.ou)";
+           << "Pacnano in&out (*.in, *.ou)"
+           << "Results (*.rst)";
     //  initialize the filter flags
     filterFlag.clear();
     ui->fileFilter->clear();
@@ -95,6 +96,11 @@ Open::Open(QWidget *parent, const int type)
             filterFlag.push_back(6);
             filterFlag.push_back(3);
             filterFlag.push_back(2);
+            filterFlag.push_back(1);
+            break;
+        /*  results files  */
+        case 8:
+            filterFlag.push_back(8);
             filterFlag.push_back(1);
             break;
         default:  // error occurs
@@ -466,6 +472,11 @@ void Open::switchSelctionType(int index) {
         case 7:
             filter << "*.in"
                    << "*.ou";
+            file->setNameFilters(filter);
+            file->setNameFilterDisables(false);
+            break;
+        case 8:
+            filter << "*.rst";
             file->setNameFilters(filter);
             file->setNameFilterDisables(false);
             break;

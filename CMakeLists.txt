@@ -87,6 +87,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         camera.h camera.cpp camera.ui
         pick.h pick.cpp
         post.h post.cpp post.ui
+        reflect.h reflect.cpp reflect.ui
     )
 
 # ##############################################################################

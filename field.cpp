@@ -60,7 +60,7 @@ Field::Field(QString& _name) {
 
     /*  initialize the anchor  */
     limitType  = 0;
-    warpScale  = 100.0;
+    warpScale  = 0.0;
     lowerLimit = 0.0;
     upperLimit = 1.0;
     checkAnchor();

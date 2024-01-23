@@ -104,5 +104,8 @@
         <file>icons/geometry.png</file>
         <file>icons/defromed.png</file>
         <file>icons/undeformed.png</file>
+        <file>icons/reflection.png</file>
+        <file>icons/smooth.png</file>
+        <file>icons/extract_surf.png</file>
     </qresource>
 </RCC>

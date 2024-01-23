@@ -33,6 +33,7 @@ pacnano::pacnano(QWidget* parent) : QMainWindow(parent), ui(new Ui::pacnano) {
 
     /*  Open forder  */
     openDir = new Open(this, 0);
+    openRst = new Open(this, 8);
     connect(ui->actProjOld, &QAction::triggered, openDir, &QDialog::show);
     connect(ui->actExit, &QAction::triggered, this, &QMainWindow::close);
 
@@ -81,10 +82,15 @@ void pacnano::setupViewportSwitch() {
     ui->vpSwtich->addItems(vpList);
     ui->vpSwtich->setCurrentIndex(0);
     ui->vpToolBar->setCurrentIndex(0);
+    ui->innerTool->setCurrentIndex(0);
 
     // Function: change the viewport using ComboBox
     connect(ui->vpSwtich, &QComboBox::currentIndexChanged, this,
-            [&](int index) { ui->vpToolBar->setCurrentIndex(index); });
+            [&](int index) {
+                ui->vpToolBar->setCurrentIndex(index);
+                if (4 == index) ui->innerTool->setCurrentIndex(1);
+            });
+
     //  Function: menu action to show project viewport
     connect(ui->actVpProject, &QAction::triggered, this, [&]() {
         ui->vpToolBar->setCurrentIndex(0);
@@ -109,6 +115,7 @@ void pacnano::setupViewportSwitch() {
     connect(ui->actVpPost, &QAction::triggered, this, [&]() {
         ui->vpToolBar->setCurrentIndex(4);
         ui->vpSwtich->setCurrentIndex(4);
+        ui->innerTool->setCurrentIndex(1);
     });
     //  Function: menu action to show monitor viewport
     connect(ui->actVpMonitor, &QAction::triggered, this, [&]() {
@@ -226,16 +233,35 @@ void pacnano::setupMaterialCreation() {
 void pacnano::setupRenderWindow() {
     /*  Create the render window  */
     renWin = new Viewer(ui->viewWindow);
-    // QString file = "/home/zhirui.fan/Documents/code/TopOpt-301-1.vtu";
-    // QString file = "/Volumes/opt/Documents/code/TopOpt-301-1.vtu";
-    QString file = "/Users/zhirui.fan/Documents/code/TopOpt-301-1.vtu";
-    Field* field = new Field(file);
-    renWin->setInputData(field);
+
+    /*  ************************************************************************
+     *  Open results files  */
+    connect(ui->btnPostOpen, &QPushButton::clicked, openRst, &QDialog::show);
+    connect(ui->actPostOpen, &QAction::triggered, openDir, &QDialog::show);
+    connect(openRst, &Open::accepted, this, [&]() {
+        QString rstFile = "";
+        openRst->getSelectContent(rstFile);
+        fields.append(new Field(rstFile));
+        renWin->setInputData(fields.last());
+        ui->mainView->setCurrentIndex(1);
+        ui->viewWindow->show();
+        renWin->initPointField(0, 0);
+        renWin->showModel();
+    });
 
     /*  ************************************************************************
      *  post configuration  */
     connect(ui->actPostConfig, &QAction::triggered, renWin,
             [&]() { renWin->configPost(); });
+    connect(ui->btnPostConfig, &QPushButton::clicked, renWin,
+            [&]() { renWin->configPost(); });
+
+    /*  ************************************************************************
+     *  reflect configuration  */
+    connect(ui->actReflect, &QAction::triggered, renWin,
+            [&]() { renWin->configReflect(); });
+    connect(ui->btnReflect, &QPushButton::clicked, renWin,
+            [&]() { renWin->configReflect(); });
 
     /*  ************************************************************************
      *  plane viewer port  */
@@ -253,19 +279,29 @@ void pacnano::setupRenderWindow() {
 
     /*  ************************************************************************
      *  show model and field   */
-    connect(ui->actShowAll, &QAction::triggered, renWin,
-            [&]() { renWin->showCompleteModel(); });
+    //  show model
     connect(ui->actShowGeom, &QAction::triggered, renWin, [&]() {
-        ui->mainView->setCurrentIndex(1);
         ui->viewWindow->show();
         renWin->showModel();
     });
+    //  show mesh
     connect(ui->actShowMesh, &QAction::triggered, renWin,
             [&]() { renWin->showMesh(); });
+    //  colored field
     connect(ui->actColorMap, &QAction::triggered, renWin,
-            [&]() { renWin->initPointField(0, 0); });
+            [&]() { renWin->showColorField(); });
+    connect(ui->btnColorMap, &QToolButton::clicked, renWin,
+            [&]() { renWin->showColorField(); });
+    //  arrow map
     connect(ui->actSymbolMap, &QAction::triggered, renWin,
             [&]() { renWin->showArrowField(); });
+    connect(ui->btnSymbolMap, &QToolButton::clicked, renWin,
+            [&]() { renWin->showArrowField(); });
+    //  deformed geometry
+    connect(ui->btnDeformGeo, &QPushButton::clicked, renWin,
+            [&]() { renWin->showFieldGeometry(); });
+    connect(ui->actDeformGeo, &QAction::triggered, renWin,
+            [&]() { renWin->showFieldGeometry(); });
 
     /*  ************************************************************************
      *  connect to selection  */
@@ -277,7 +313,6 @@ void pacnano::setupRenderWindow() {
     /*  ************************************************************************
      *  hide selection  */
     connect(ui->btnHideCellCancel, &QPushButton::clicked, ui->innerTool, [&]() {
-        // ui->innerTool->hide();
         ui->innerTool->setCurrentIndex(0);
         renWin->turnOffPickMode();
         ui->actExtractSelect->setDisabled(false);
@@ -294,7 +329,18 @@ void pacnano::setupRenderWindow() {
         } else {
             ui->actExtractSelect->setDisabled(true);
             ui->innerTool->show();
-            ui->innerTool->setCurrentIndex(1);
+            ui->innerTool->setCurrentIndex(2);
+            renWin->activePickMode(USE_CELL_MODE);
+        }
+    });
+    connect(ui->btnHideCells, &QToolButton::clicked, renWin, [&]() {
+        //  get the status of the picker
+        if (renWin->isPickerActivated()) {
+            renWin->handleCellPick(USE_HIDE_MODE);
+        } else {
+            ui->actExtractSelect->setDisabled(true);
+            ui->innerTool->show();
+            ui->innerTool->setCurrentIndex(2);
             renWin->activePickMode(USE_CELL_MODE);
         }
     });
@@ -318,8 +364,25 @@ void pacnano::setupRenderWindow() {
             renWin->handleCellPick(USE_EXTRACT_MODE);
         } else {
             ui->actHideSelect->setDisabled(true);
-            ui->innerTool->setCurrentIndex(2);
+            ui->innerTool->setCurrentIndex(3);
             renWin->activePickMode(USE_CELL_MODE);
         }
     });
+    connect(ui->btnExtractCells, &QToolButton::clicked, renWin, [&]() {
+        //  get the status of the picker
+        if (renWin->isPickerActivated()) {
+            renWin->handleCellPick(USE_EXTRACT_MODE);
+        } else {
+            ui->actHideSelect->setDisabled(true);
+            ui->innerTool->setCurrentIndex(3);
+            renWin->activePickMode(USE_CELL_MODE);
+        }
+    });
+
+    /*  ************************************************************************
+     *  complete model  */
+    connect(ui->actShowAll, &QAction::triggered, renWin,
+            [&]() { renWin->showCompleteModel(); });
+    connect(ui->btnCompleteCells, &QToolButton::clicked, renWin,
+            [&]() { renWin->showCompleteModel(); });
 }

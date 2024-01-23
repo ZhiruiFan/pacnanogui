@@ -82,15 +82,23 @@ Post::Post(QWidget *parent) : QDialog(parent), ui(new Ui::Post) {
     /*  connect to the status of threshold  */
     connect(ui->useLimit, &QRadioButton::clicked, this, [&]() {
         ui->useLowerLimit->setDisabled(false);
-        ui->lowerLimit->setDisabled(false);
+        ui->lowerLimit->setDisabled(true);
         ui->useUpperLimit->setDisabled(false);
-        ui->upperLimit->setDisabled(false);
+        ui->upperLimit->setDisabled(true);
     });
     connect(ui->useNoLimit, &QRadioButton::clicked, this, [&]() {
         ui->useLowerLimit->setDisabled(true);
         ui->lowerLimit->setDisabled(true);
         ui->useUpperLimit->setDisabled(true);
         ui->upperLimit->setDisabled(true);
+    });
+
+    /*  active the values of lower and upper limits  */
+    connect(ui->useLowerLimit, &QCheckBox::stateChanged, this, [&](int state) {
+        ui->lowerLimit->setEnabled(state == Qt::Checked);
+    });
+    connect(ui->useUpperLimit, &QCheckBox::stateChanged, this, [&](int state) {
+        ui->upperLimit->setEnabled(state == Qt::Checked);
     });
 }
 

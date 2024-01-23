@@ -27,7 +27,7 @@
    <enum>Qt::ToolButtonTextBesideIcon</enum>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout_6">
+   <layout class="QHBoxLayout" name="horizontalLayout_7">
     <property name="spacing">
      <number>0</number>
     </property>
@@ -543,13 +543,13 @@ QTreeView::branch:open:has-children:has-siblings  {
              <property name="minimumSize">
               <size>
                <width>110</width>
-               <height>0</height>
+               <height>25</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
                <width>110</width>
-               <height>16777215</height>
+               <height>25</height>
               </size>
              </property>
             </widget>
@@ -574,13 +574,13 @@ QTreeView::branch:open:has-children:has-siblings  {
             <widget class="QLabel" name="label">
              <property name="minimumSize">
               <size>
-               <width>60</width>
+               <width>50</width>
                <height>0</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>55</width>
+               <width>50</width>
                <height>16777215</height>
               </size>
              </property>
@@ -594,13 +594,13 @@ QTreeView::branch:open:has-children:has-siblings  {
              <property name="minimumSize">
               <size>
                <width>100</width>
-               <height>0</height>
+               <height>25</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
                <width>100</width>
-               <height>16777215</height>
+               <height>25</height>
               </size>
              </property>
             </widget>
@@ -625,13 +625,13 @@ QTreeView::branch:open:has-children:has-siblings  {
             <widget class="QLabel" name="label_2">
              <property name="minimumSize">
               <size>
-               <width>60</width>
+               <width>50</width>
                <height>0</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>55</width>
+               <width>50</width>
                <height>16777215</height>
               </size>
              </property>
@@ -645,13 +645,13 @@ QTreeView::branch:open:has-children:has-siblings  {
              <property name="minimumSize">
               <size>
                <width>100</width>
-               <height>0</height>
+               <height>25</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
                <width>100</width>
-               <height>16777215</height>
+               <height>25</height>
               </size>
              </property>
             </widget>
@@ -666,7 +666,7 @@ QTreeView::branch:open:has-children:has-siblings  {
              </property>
              <property name="sizeHint" stdset="0">
               <size>
-               <width>10</width>
+               <width>30</width>
                <height>20</height>
               </size>
              </property>
@@ -676,13 +676,13 @@ QTreeView::branch:open:has-children:has-siblings  {
             <widget class="QStackedWidget" name="innerTool">
              <property name="minimumSize">
               <size>
-               <width>180</width>
+               <width>300</width>
                <height>25</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>180</width>
+               <width>2000</width>
                <height>25</height>
               </size>
              </property>
@@ -690,9 +690,90 @@ QTreeView::branch:open:has-children:has-siblings  {
               <number>0</number>
              </property>
              <property name="currentIndex">
-              <number>0</number>
+              <number>3</number>
              </property>
-             <widget class="QWidget" name="blankPage"/>
+             <widget class="QWidget" name="blankpage"/>
+             <widget class="QWidget" name="fields">
+              <layout class="QHBoxLayout" name="horizontalLayout_9">
+               <property name="spacing">
+                <number>0</number>
+               </property>
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <spacer name="horizontalSpacer_8">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>41</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QComboBox" name="comboBox">
+                 <property name="minimumSize">
+                  <size>
+                   <width>100</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_14">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeType">
+                  <enum>QSizePolicy::Fixed</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>10</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+               <item>
+                <widget class="QComboBox" name="comboBox_2">
+                 <property name="minimumSize">
+                  <size>
+                   <width>100</width>
+                   <height>0</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacer_15">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </widget>
              <widget class="QWidget" name="hideCells">
               <property name="styleSheet">
                <string notr="true"/>
@@ -1979,7 +2060,7 @@ QTreeView::branch:open:has-children:has-siblings  {
                <number>1</number>
               </property>
               <item>
-               <widget class="QToolButton" name="btnPostCreate">
+               <widget class="QToolButton" name="btnPostOpen">
                 <property name="text">
                  <string>...</string>
                 </property>
@@ -1999,7 +2080,7 @@ QTreeView::branch:open:has-children:has-siblings  {
                </widget>
               </item>
               <item>
-               <widget class="QToolButton" name="btnPostMng">
+               <widget class="QToolButton" name="btnPostConfig">
                 <property name="text">
                  <string>...</string>
                 </property>
@@ -2035,7 +2116,7 @@ QTreeView::branch:open:has-children:has-siblings  {
                </widget>
               </item>
               <item>
-               <widget class="QToolButton" name="btnPostCountor_3">
+               <widget class="QToolButton" name="btnDeformGeo">
                 <property name="text">
                  <string>...</string>
                 </property>
@@ -2055,43 +2136,7 @@ QTreeView::branch:open:has-children:has-siblings  {
                </widget>
               </item>
               <item>
-               <widget class="QToolButton" name="btnPostSymbol_3">
-                <property name="text">
-                 <string>...</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="icons.qrc">
-                  <normaloff>:/icons/defromed.png</normaloff>:/icons/defromed.png</iconset>
-                </property>
-                <property name="iconSize">
-                 <size>
-                  <width>20</width>
-                  <height>20</height>
-                 </size>
-                </property>
-                <property name="autoRaise">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QFrame" name="frame_115">
-                <property name="maximumSize">
-                 <size>
-                  <width>16777215</width>
-                  <height>1</height>
-                 </size>
-                </property>
-                <property name="frameShape">
-                 <enum>QFrame::HLine</enum>
-                </property>
-                <property name="frameShadow">
-                 <enum>QFrame::Raised</enum>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QToolButton" name="btnPostCountor">
+               <widget class="QToolButton" name="btnColorMap">
                 <property name="text">
                  <string>...</string>
                 </property>
@@ -2111,27 +2156,7 @@ QTreeView::branch:open:has-children:has-siblings  {
                </widget>
               </item>
               <item>
-               <widget class="QToolButton" name="btnPostCountor_4">
-                <property name="text">
-                 <string>...</string>
-                </property>
-                <property name="icon">
-                 <iconset resource="icons.qrc">
-                  <normaloff>:/icons/countour.png</normaloff>:/icons/countour.png</iconset>
-                </property>
-                <property name="iconSize">
-                 <size>
-                  <width>20</width>
-                  <height>20</height>
-                 </size>
-                </property>
-                <property name="autoRaise">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QToolButton" name="btnPostSymbol">
+               <widget class="QToolButton" name="btnSymbolMap">
                 <property name="text">
                  <string>...</string>
                 </property>
@@ -2187,13 +2212,53 @@ QTreeView::branch:open:has-children:has-siblings  {
                </widget>
               </item>
               <item>
-               <widget class="QToolButton" name="btnPostExport">
+               <widget class="QToolButton" name="btnHideCells">
                 <property name="text">
                  <string>...</string>
                 </property>
                 <property name="icon">
                  <iconset resource="icons.qrc">
-                  <normaloff>:/icons/export.png</normaloff>:/icons/export.png</iconset>
+                  <normaloff>:/icons/show_reverse.png</normaloff>:/icons/show_reverse.png</iconset>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>20</width>
+                  <height>20</height>
+                 </size>
+                </property>
+                <property name="autoRaise">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QToolButton" name="btnExtractCells">
+                <property name="text">
+                 <string>...</string>
+                </property>
+                <property name="icon">
+                 <iconset resource="icons.qrc">
+                  <normaloff>:/icons/show_extract.png</normaloff>:/icons/show_extract.png</iconset>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>20</width>
+                  <height>20</height>
+                 </size>
+                </property>
+                <property name="autoRaise">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QToolButton" name="btnCompleteCells">
+                <property name="text">
+                 <string>...</string>
+                </property>
+                <property name="icon">
+                 <iconset resource="icons.qrc">
+                  <normaloff>:/icons/show_all.png</normaloff>:/icons/show_all.png</iconset>
                 </property>
                 <property name="iconSize">
                  <size>
@@ -2219,6 +2284,102 @@ QTreeView::branch:open:has-children:has-siblings  {
                 </property>
                 <property name="frameShadow">
                  <enum>QFrame::Raised</enum>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QToolButton" name="btnReflect">
+                <property name="text">
+                 <string>...</string>
+                </property>
+                <property name="icon">
+                 <iconset resource="icons.qrc">
+                  <normaloff>:/icons/reflection.png</normaloff>:/icons/reflection.png</iconset>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>20</width>
+                  <height>20</height>
+                 </size>
+                </property>
+                <property name="autoRaise">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QToolButton" name="btnExtractGeo">
+                <property name="text">
+                 <string>...</string>
+                </property>
+                <property name="icon">
+                 <iconset resource="icons.qrc">
+                  <normaloff>:/icons/extract_surf.png</normaloff>:/icons/extract_surf.png</iconset>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>20</width>
+                  <height>20</height>
+                 </size>
+                </property>
+                <property name="autoRaise">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QToolButton" name="btnSmooth">
+                <property name="text">
+                 <string>...</string>
+                </property>
+                <property name="icon">
+                 <iconset resource="icons.qrc">
+                  <normaloff>:/icons/smooth.png</normaloff>:/icons/smooth.png</iconset>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>20</width>
+                  <height>20</height>
+                 </size>
+                </property>
+                <property name="autoRaise">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QFrame" name="frame_114">
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>1</height>
+                 </size>
+                </property>
+                <property name="frameShape">
+                 <enum>QFrame::HLine</enum>
+                </property>
+                <property name="frameShadow">
+                 <enum>QFrame::Raised</enum>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QToolButton" name="btnPostExport">
+                <property name="text">
+                 <string>...</string>
+                </property>
+                <property name="icon">
+                 <iconset resource="icons.qrc">
+                  <normaloff>:/icons/export.png</normaloff>:/icons/export.png</iconset>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>20</width>
+                  <height>20</height>
+                 </size>
+                </property>
+                <property name="autoRaise">
+                 <bool>true</bool>
                 </property>
                </widget>
               </item>
@@ -2977,9 +3138,7 @@ QTreeView::branch:open:has-children:has-siblings  {
     <addaction name="actPostOpen"/>
     <addaction name="actPostConfig"/>
     <addaction name="separator"/>
-    <addaction name="actionUndeformed_shape"/>
-    <addaction name="actionDeformed_shape"/>
-    <addaction name="separator"/>
+    <addaction name="actDeformGeo"/>
     <addaction name="actColorMap"/>
     <addaction name="actCountourMap"/>
     <addaction name="actSymbolMap"/>
@@ -3049,9 +3208,9 @@ QTreeView::branch:open:has-children:has-siblings  {
     <addaction name="actExtractSelect"/>
     <addaction name="actShowAll"/>
     <addaction name="separator"/>
-    <addaction name="actionExtract_geometry"/>
-    <addaction name="actionSmooth"/>
-    <addaction name="actionReflect"/>
+    <addaction name="actExtractgeo"/>
+    <addaction name="actSmooth"/>
+    <addaction name="actReflect"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -3277,34 +3436,6 @@ QTreeView::branch:open:has-children:has-siblings  {
    <addaction name="actTopDirichletBC"/>
    <addaction name="actForce"/>
   </widget>
-  <widget class="QToolBar" name="toolBar_3">
-   <property name="windowTitle">
-    <string>toolBar_3</string>
-   </property>
-   <property name="iconSize">
-    <size>
-     <width>20</width>
-     <height>20</height>
-    </size>
-   </property>
-   <property name="toolButtonStyle">
-    <enum>Qt::ToolButtonIconOnly</enum>
-   </property>
-   <attribute name="toolBarArea">
-    <enum>TopToolBarArea</enum>
-   </attribute>
-   <attribute name="toolBarBreak">
-    <bool>true</bool>
-   </attribute>
-   <addaction name="actMove"/>
-   <addaction name="actZoomIn"/>
-   <addaction name="actZoomOut"/>
-   <addaction name="separator"/>
-   <addaction name="actionRoll_right"/>
-   <addaction name="actionRoll_left"/>
-   <addaction name="actionRoll_up"/>
-   <addaction name="actionRoll_down"/>
-  </widget>
   <widget class="QToolBar" name="toolBar_4">
    <property name="windowTitle">
     <string>toolBar_4</string>
@@ -3322,7 +3453,7 @@ QTreeView::branch:open:has-children:has-siblings  {
     <enum>TopToolBarArea</enum>
    </attribute>
    <attribute name="toolBarBreak">
-    <bool>false</bool>
+    <bool>true</bool>
    </attribute>
    <addaction name="actTopProjNew"/>
    <addaction name="actTopProjOpen"/>
@@ -3332,7 +3463,7 @@ QTreeView::branch:open:has-children:has-siblings  {
   </widget>
   <widget class="QToolBar" name="toolBar_5">
    <property name="windowTitle">
-    <string>toolBar_5</string>
+    <string>Visualization</string>
    </property>
    <property name="iconSize">
     <size>
@@ -3352,9 +3483,7 @@ QTreeView::branch:open:has-children:has-siblings  {
    <addaction name="actShowGeom"/>
    <addaction name="actShowMesh"/>
    <addaction name="separator"/>
-   <addaction name="actionUndeformed_shape"/>
-   <addaction name="actionDeformed_shape"/>
-   <addaction name="separator"/>
+   <addaction name="actDeformGeo"/>
    <addaction name="actColorMap"/>
    <addaction name="actCountourMap"/>
    <addaction name="actSymbolMap"/>
@@ -3364,7 +3493,7 @@ QTreeView::branch:open:has-children:has-siblings  {
   </widget>
   <widget class="QToolBar" name="toolBar_6">
    <property name="windowTitle">
-    <string>toolBar_6</string>
+    <string>Extract tools</string>
    </property>
    <property name="iconSize">
     <size>
@@ -3411,6 +3540,57 @@ QTreeView::branch:open:has-children:has-siblings  {
    <addaction name="actXY"/>
    <addaction name="actYZ"/>
    <addaction name="actXZ"/>
+  </widget>
+  <widget class="QToolBar" name="toolBar_8">
+   <property name="windowTitle">
+    <string>Visualization tools</string>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>20</width>
+     <height>20</height>
+    </size>
+   </property>
+   <property name="toolButtonStyle">
+    <enum>Qt::ToolButtonIconOnly</enum>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actReflect"/>
+   <addaction name="actSmooth"/>
+   <addaction name="actExtractgeo"/>
+  </widget>
+  <widget class="QToolBar" name="toolBar_3">
+   <property name="windowTitle">
+    <string>toolBar_3</string>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>20</width>
+     <height>20</height>
+    </size>
+   </property>
+   <property name="toolButtonStyle">
+    <enum>Qt::ToolButtonIconOnly</enum>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actMove"/>
+   <addaction name="actZoomIn"/>
+   <addaction name="actZoomOut"/>
+   <addaction name="separator"/>
+   <addaction name="actionRoll_right"/>
+   <addaction name="actionRoll_left"/>
+   <addaction name="actionRoll_up"/>
+   <addaction name="actionRoll_down"/>
   </widget>
   <action name="actRemote">
    <property name="icon">
@@ -4389,17 +4569,29 @@ QTreeView::branch:open:has-children:has-siblings  {
     <string>Delete</string>
    </property>
   </action>
-  <action name="actionExtract_geometry">
+  <action name="actExtractgeo">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/extract_surf.png</normaloff>:/icons/extract_surf.png</iconset>
+   </property>
    <property name="text">
     <string>Extract geometry</string>
    </property>
   </action>
-  <action name="actionSmooth">
+  <action name="actSmooth">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/smooth.png</normaloff>:/icons/smooth.png</iconset>
+   </property>
    <property name="text">
     <string>Smooth</string>
    </property>
   </action>
-  <action name="actionReflect">
+  <action name="actReflect">
+   <property name="icon">
+    <iconset resource="icons.qrc">
+     <normaloff>:/icons/reflection.png</normaloff>:/icons/reflection.png</iconset>
+   </property>
    <property name="text">
     <string>Reflect </string>
    </property>
@@ -4568,13 +4760,13 @@ QTreeView::branch:open:has-children:has-siblings  {
     <string>Deformed shape</string>
    </property>
   </action>
-  <action name="actionUndeformed_shape">
+  <action name="actDeformGeo">
    <property name="icon">
     <iconset resource="icons.qrc">
      <normaloff>:/icons/undeformed.png</normaloff>:/icons/undeformed.png</iconset>
    </property>
    <property name="text">
-    <string>Undeformed shape</string>
+    <string>Deformed geometry</string>
    </property>
   </action>
  </widget>

@@ -38,10 +38,12 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     render->SetBackground(colors->GetColor3d("White").GetData());
 
     /*  field variables  */
-    dtMap          = vtkDataSetMapper::New();
-    isModelCreated = false;
-    isModelLoaded  = false;
-    isModelMode    = true;
+    dtMap            = vtkDataSetMapper::New();
+    isModelCreated   = false;
+    isModelLoaded    = false;
+    isFieldLoaded    = false;
+    isModelMode      = true;
+    isInitViewerPort = true;
 
     /*  Picker vriables  */
     pick          = Pick::New();
@@ -104,6 +106,11 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
         //  update viewerport
         updatePointField();
     });
+
+    /*  reflect operation  */
+    reflect    = new Reflect(this);
+    transform  = vtkTransform::New();
+    refOperate = vtkTransformFilter::New();
 }
 
 /*  ============================================================================
@@ -138,8 +145,9 @@ void Viewer::setInputData(Field*& input) {
     pick->setField(input);
 
     /*  copy the current unstructured data for operation  */
-    portModelCur = field->getInputPort();
-    portFieldCur = field->getThresholdOutputPort();
+    portModelCur  = field->getInputPort();
+    portFieldCur  = field->getThresholdOutputPort();
+    ugridFieldCur = field->getInputData();
 
     /*  update the flag  */
     isModelCreated = true;
@@ -158,14 +166,14 @@ void Viewer::update() {
             showModel();
             break;
         }
-        /*  show mesh  */
+        /*  show point related field  */
         case 1: {
-            showMesh();
+            showColorField();
             break;
         }
-        /*  show point related field  */
+        /*  show arrow field  */
         case 2: {
-            showPointField();
+            showArrowField();
             break;
         }
         /*  show field geometry  */
@@ -216,18 +224,20 @@ void Viewer::showModel() {
         }
 
         /*  set the data to the viewer  */
-        // dtMap->SetInputData(ugridCur);
         dtMap->SetInputConnection(portModelCur);
         dtMap->ScalarVisibilityOff();
 
         /*  configure the actor  */
         actor->GetProperty()->SetColor(colors->GetColor3d("cyan").GetData());
         actor->GetProperty()->SetEdgeVisibility(0);
-        actor->GetProperty()->SetLineWidth(2.0);
         actor->SetMapper(dtMap);
 
         /*  show mesh and config camera  */
-        render->ResetCamera();
+        /*  reset the camera  */
+        if (isInitViewerPort) {
+            isInitViewerPort = false;
+            render->ResetCamera();
+        }
         renWin->Render();
 
         /*  update the model loaded flag  */
@@ -241,17 +251,13 @@ void Viewer::showModel() {
  *  @param  file: the file to read the model mesh information  */
 void Viewer::showMesh() {
     /*  check the status of the model  */
-    if (isModelLoaded) {
+    if (isModelLoaded || isFieldLoaded) {
         /*  assign the recorder  */
         recorder[0] = 1;
 
-        /*  set the head information  */
-        QString info = "Geometry of the current model";
-        configStatusBar(field->getPathName(), info);
-
         /*  configure the actor  */
-        actor->GetProperty()->SetColor(colors->GetColor3d("cyan").GetData());
-        actor->GetProperty()->SetEdgeVisibility(1);
+        bool isOn = actor->GetProperty()->GetEdgeVisibility();
+        actor->GetProperty()->SetEdgeVisibility(!isOn);
         actor->GetProperty()->SetLineWidth(0.0);
 
         /*  show mesh and config camera  */
@@ -265,11 +271,7 @@ void Viewer::showMesh() {
  *  @param  idx: the index of point data that will be shown
  *  @param  comp: the component of the point data that will be extracted  */
 void Viewer::initPointField(const int& idx, const int& comp) {
-    /*  update the flags  */
-    isModelMode = false;
-
     /*  assign the recorder  */
-    recorder[0] = 2;
     recorder[1] = idx;
     recorder[2] = comp;
 
@@ -315,18 +317,12 @@ void Viewer::initPointField(const int& idx, const int& comp) {
     lut->SetTableRange(dtCur->GetRange());
     lut->Build();
 
-    /*  configure the scalar bar  */
-    if (!isScalarBarPlayed) {
-        configScalarBar();
-        scalarBar->SetLookupTable(lut);
-        scalarBar->SetTitle(name.str().c_str());
-        render->AddActor(scalarBar);
-        isScalarBarPlayed = true;
-    }
-
     /*  set the input port of the field  */
     field->resetCellPick();
     updatePointField();
+
+    /*  update the flags  */
+    isFieldLoaded = true;
 }
 
 /*  ============================================================================
@@ -338,10 +334,9 @@ void Viewer::updatePointField() {
     ugridFieldCur = field->getThresholdOutput();
     portFieldCur  = field->getThresholdOutputPort();
 
-    //  update the scalar bar
-    configScalarBar();
-
     //  update the viewerport
+    configScalarBar();
+    render->ResetCamera();
     update();
 }
 
@@ -351,99 +346,123 @@ void Viewer::updatePointField() {
  *  @param  field: the field that to be shown
  *  @param  idx: the index of the component in the data set
  *  @param  comp: the component index  */
-void Viewer::showPointField() {
-    /*  get the field index and its component  */
-    int index = recorder[1];
-    int comp  = recorder[2];
+void Viewer::showColorField() {
+    /*  check the if the model is loaded  */
+    if (isFieldLoaded) {
+        /*  update the model or field flag  */
+        isModelMode = false;
 
-    /*  get the name of the field  */
-    std::stringstream name;
-    name << field->getPointDataArrayName(index) << ":" << compName[comp];
+        /*  assign the recorder */
+        recorder[0] = 1;
 
-    /*  Create the LOOKUP table  */
-    //  update the range of field data
-    if (isAutoLegend) {
-        lut->SetNumberOfTableValues(numIntervals);
-        lut->SetTableRange(ugridFieldCur->GetPointData()
-                               ->GetArray(name.str().c_str())
-                               ->GetRange());
+        /*  get the field index and its component  */
+        int index = recorder[1];
+        int comp  = recorder[2];
+
+        /*  get the name of the field  */
+        std::stringstream name;
+        name << field->getPointDataArrayName(index) << ":" << compName[comp];
+
+        /*  Create the LOOKUP table  */
+        //  update the range of field data
+        if (isAutoLegend) {
+            lut->SetNumberOfTableValues(numIntervals);
+            lut->SetTableRange(ugridFieldCur->GetPointData()
+                                   ->GetArray(name.str().c_str())
+                                   ->GetRange());
+        }
+        //  update the lookup table
+        lut->Build();
+
+        /*  configure the scalar bar  */
+        if (!isScalarBarPlayed) {
+            configScalarBar();
+            scalarBar->SetLookupTable(lut);
+            scalarBar->SetTitle(name.str().c_str());
+            render->AddActor(scalarBar);
+            isScalarBarPlayed = true;
+        }
+
+        /*  setup the mapper  */
+        dtMap->SetInputConnection(portFieldCur);
+
+        /*  set the anchor of the warpper  */
+        dtMap->SetScalarVisibility(1);
+        dtMap->SetScalarModeToUsePointData();
+        dtMap->SelectColorArray(name.str().c_str());
+        dtMap->SetLookupTable(lut);
+        dtMap->SetScalarRange(lut->GetRange());
+
+        /*  Setup the actor  */
+        actor->SetMapper(dtMap);
+        render->AddActor2D(scalarBar);
+
+        /*  Render the window  */
+        renWin->Render();
     }
-    //  update the lookup table
-    lut->Build();
-
-    /*  setup the mapper  */
-    dtMap->SetInputConnection(portFieldCur);
-
-    /*  set the anchor of the warpper  */
-    dtMap->SetScalarVisibility(1);
-    dtMap->SetScalarModeToUsePointData();
-    dtMap->SelectColorArray(name.str().c_str());
-    dtMap->SetLookupTable(lut);
-    dtMap->SetScalarRange(lut->GetRange());
-
-    /*  Setup the actor  */
-    actor->SetMapper(dtMap);
-    actor->GetProperty()->SetEdgeVisibility(0);
-    actor->GetProperty()->SetLineWidth(0.0);
-    render->AddActor2D(scalarBar);
-
-    /*  Render the window  */
-    renWin->Render();
 }
 
-/*  showArrowField: show the data using the arrow  */
+/*  ############################################################################
+ *  showArrowField: show the data using the arrow  */
 void Viewer::showArrowField() {
-    /*  get the field index and its component  */
-    int index = recorder[1];
-    int comp  = recorder[2];
+    /*  check the field is loaded or not  */
+    if (isFieldLoaded) {
+        /*  update the model or field flag  */
+        isModelMode = false;
 
-    /*  get the name of the field  */
-    std::stringstream name;
-    name << field->getPointDataArrayName(index) << ":" << compName[comp];
+        /*  assign the recorder */
+        recorder[0] = 2;
 
-    /*  setup the mapper  */
-    gly->SetInputConnection(portFieldCur);
-    gly->SetSourceConnection(arrow->GetOutputPort());
-    gly->SetScaleFactor(100.0);
-    gly->SetVectorModeToUseVector();
-    gly->SetInputArrayToProcess(0, 0, 0,
-                                vtkDataObject::FIELD_ASSOCIATION_POINTS,
-                                field->getPointDataArrayName(index));
-    polyMapper->AddInputConnection(gly->GetOutputPort());
-    polyMapper->SetLookupTable(lut);
-    polyMapper->ScalarVisibilityOn();
-    polyMapper->SetScalarModeToUsePointFieldData();
-    polyMapper->SelectColorArray(name.str().c_str());
-    polyMapper->SetScalarRange(lut->GetRange());
-    actor->SetMapper(polyMapper);
+        /*  get the field index and its component  */
+        int index = recorder[1];
+        int comp  = recorder[2];
 
-    /*  configure the scalar bar  */
-    if (!isScalarBarPlayed) {
-        configScalarBar();
-        scalarBar->SetLookupTable(lut);
-        scalarBar->SetTitle(name.str().c_str());
-        render->AddActor(scalarBar);
-        isScalarBarPlayed = true;
+        /*  get the name of the field  */
+        std::stringstream name;
+        name << field->getPointDataArrayName(index) << ":" << compName[comp];
+
+        /*  setup the mapper  */
+        gly->SetInputConnection(portFieldCur);
+        gly->SetSourceConnection(arrow->GetOutputPort());
+        gly->SetScaleFactor(100.0);
+        gly->SetVectorModeToUseVector();
+        gly->SetInputArrayToProcess(0, 0, 0,
+                                    vtkDataObject::FIELD_ASSOCIATION_POINTS,
+                                    field->getPointDataArrayName(index));
+        polyMapper->RemoveAllInputConnections(0);
+        polyMapper->AddInputConnection(0, gly->GetOutputPort());
+        polyMapper->SetLookupTable(lut);
+        polyMapper->ScalarVisibilityOn();
+        polyMapper->SetScalarModeToUsePointFieldData();
+        polyMapper->SelectColorArray(name.str().c_str());
+        polyMapper->SetScalarRange(lut->GetRange());
+        actor->SetMapper(polyMapper);
+
+        /*  configure the scalar bar  */
+        if (!isScalarBarPlayed) {
+            configScalarBar();
+            scalarBar->SetLookupTable(lut);
+            scalarBar->SetTitle(name.str().c_str());
+            render->AddActor(scalarBar);
+            isScalarBarPlayed = true;
+        }
+
+        /*  Render the window  */
+        renWin->Render();
     }
-
-    /*  Render the window  */
-    renWin->Render();
 }
 
 /*  ############################################################################
  *  showFieldGeometry: display the information with respect to the nodes,
  *  it includes the nodal displacement, reaction force and so on  */
 void Viewer::showFieldGeometry() {
-    /*  Render the window  */
-    renWin->Render();
-    if (isModelLoaded) {
-        /*  assign the flags  */
+    /*  check if  the field is loaded  */
+    if (isFieldLoaded) {
+        /*  assign the recorder */
         recorder[0] = 3;
-        isModelMode = false;
 
-        /*  reset the interactor style  */
-        pick->turnOff();
-        interact->SetInteractorStyle(initStyle);
+        /*  assign the flags  */
+        isModelMode = false;
 
         /*  set the head information  */
         QString info = "Geometry of the current model";
@@ -462,11 +481,72 @@ void Viewer::showFieldGeometry() {
 
         /*  configure the actor  */
         actor->GetProperty()->SetColor(colors->GetColor3d("cyan").GetData());
-        actor->GetProperty()->SetEdgeVisibility(0);
-        actor->GetProperty()->SetLineWidth(2.0);
         actor->SetMapper(dtMap);
 
         /*  show mesh and config camera  */
+        renWin->Render();
+    }
+}
+
+/*  ############################################################################
+ *  showMirrorField: show the reflected field according to the specified
+ *  parameters  */
+void Viewer::showMirrorField() {
+    if (isFieldLoaded) {
+        /*  update the model or field flag  */
+        isModelMode = false;
+
+        /*  assign the recorder */
+        recorder[0] = 4;
+
+        /*  get the field index and its component  */
+        int index = recorder[1];
+        int comp  = recorder[2];
+
+        /*  get the name of the field  */
+        std::stringstream name;
+        name << field->getPointDataArrayName(index) << ":" << compName[comp];
+
+        /*  Create the LOOKUP table  */
+        //  update the range of field data
+        if (isAutoLegend) {
+            lut->SetNumberOfTableValues(numIntervals);
+            lut->SetTableRange(ugridFieldCur->GetPointData()
+                                   ->GetArray(name.str().c_str())
+                                   ->GetRange());
+        }
+        /*  setup the mirror plane operation  */
+        bool* mirrorFlags = reflect->getMirrorPlane();
+        double scale[3];
+        scale[0] = mirrorFlags[0] ? -1.0 : 1.0;
+        scale[1] = mirrorFlags[1] ? -1.0 : 1.0;
+        scale[2] = mirrorFlags[2] ? -1.0 : 1.0;
+        transform->Scale(scale[0], scale[1], scale[2]);
+
+        /*  setup the mirror operation  */
+        refOperate->SetTransform(transform);
+        refOperate->SetInputConnection(portFieldCur);
+
+        /*  setup the poly data mapper  */
+        polyMapper->RemoveAllInputConnections(0);
+        polyMapper->AddInputConnection(refOperate->GetOutputPort());
+        polyMapper->SetLookupTable(lut);
+        polyMapper->ScalarVisibilityOn();
+        polyMapper->SetScalarModeToUsePointFieldData();
+        polyMapper->SelectColorArray(name.str().c_str());
+        polyMapper->SetScalarRange(lut->GetRange());
+        actor->SetMapper(polyMapper);
+
+        /*  configure the scalar bar  */
+        if (!isScalarBarPlayed) {
+            configScalarBar();
+            scalarBar->SetLookupTable(lut);
+            scalarBar->SetTitle(name.str().c_str());
+            render->AddActor(scalarBar);
+            isScalarBarPlayed = true;
+        }
+
+        /*  Render the window  */
         renWin->Render();
     }
 }
@@ -651,5 +731,5 @@ void Viewer::configScalarBar() {
     scalarBar->SetMaximumHeightInPixels(legendHight);
 
     /*  label data format  */
-    scalarBar->SetLabelFormat("%.4e");
+    scalarBar->SetLabelFormat("%+.4e");
 }

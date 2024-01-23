@@ -41,12 +41,14 @@ private:
     Ui::pacnano *ui;         // ui interface
     Remote *remote;          // remote server login UI
     Open *openDir;           // open the directory
+    Open *openRst;           // open the resutls files
     Project *project;        // pacnano project
     Model *model;            //  model object
     Material *material;      // material dialog
     Viewer *renWin;          // render window
     MatAssign *matAssign;    // material assignment
     QToolBar *innerToolBar;  // inner tool bar for user interaction
+    QList<Field *> fields;   // list of fields
 
 private:
     bool USE_MODEL_MODE;     // operation is for model
