@@ -58,6 +58,9 @@ Field::Field(QString& _name) {
     /*  coutour filter  */
     contourFilter = vtkContourFilter::New();
 
+    /*  transfer object  */
+    cleanFilter = vtkCleanUnstructuredGrid::New();
+
     /*  initialize the anchor  */
     limitType  = 0;
     warpScale  = 0.0;
@@ -283,6 +286,74 @@ void Field::resetCellPick() {
 
     /*  update the flag  */
     isPicked = false;
+}
+
+/*  ############################################################################
+ *  mirror: mirror the unstructured grid according to the specifed
+ *  parameters
+ *  @param  isUseAll: whether the all ugrid is used or not?
+ *  @param  plane: determine the XY, YZ, XZ plane is used or not?
+ *  @param  offset: offset of the original points
+ *  @param  rotation: rotation angles along each axis  */
+void Field::mirror(const bool isUseAll, const bool* planes,
+                   const double* offset, const double* rotation) {
+    /*  define transformer  */
+    //  mirror that is parallel to which plane
+    transform = vtkTransform::New();
+    transform->Scale(planes[1] ? -1.0 : 1.0,  //
+                     planes[2] ? -1.0 : 1.0,  //
+                     planes[0] ? -1.0 : 1.0);
+    //  translate from the plane
+    transform->Translate(offset[0] * 2.0,  //
+                         offset[1] * 2.0,  //
+                         offset[2] * 2.0);
+    //  rotation along axis
+    transform->RotateX(rotation[0]);
+    transform->RotateY(rotation[1]);
+    transform->RotateZ(rotation[2]);
+
+    /*  copy the original values  */
+    transformFilter = vtkTransformFilter::New();
+    vtkAlgorithmOutput* sourcePort;
+    if (isUseAll) {
+        sourcePort = denFilter->GetOutputPort();
+    } else {
+        sourcePort = portCur;
+    }
+    transformFilter->SetInputConnection(sourcePort);
+    transformFilter->SetTransform(transform);
+    transformFilter->Update();
+
+    /*  merge the ugrid  */
+    appendFilter = vtkAppendFilter::New();
+    appendFilter->AddInputConnection(sourcePort);
+    appendFilter->AddInputConnection(transformFilter->GetOutputPort());
+    appendFilter->Update();
+
+    /*  clean the duplicated data  */
+    cleanFilter->SetInputConnection(appendFilter->GetOutputPort());
+    cleanFilter->Update();
+
+    /*  update the port and data in current  */
+    ugridCur = cleanFilter->GetOutput();
+    portCur  = cleanFilter->GetOutputPort();
+
+    /*  release the temporary variables  */
+    transform->Delete();
+    transformFilter->Delete();
+}
+
+/*  ============================================================================
+ *  getMirrorOutput: get the ugrid after mirror operation
+ *  @return  the unstrictured grid after mirror operation  */
+vtkUnstructuredGrid* Field::getMirrorOutput() {
+    return cleanFilter->GetOutput();
+}
+
+/*  getMirrorOutput: get the data port after mirror operation
+ *  @return  the data port after mirror operation  */
+vtkAlgorithmOutput* Field::getMirrorOutputPort() {
+    return cleanFilter->GetOutputPort();
 }
 
 /*  ########################################################################

@@ -111,6 +111,17 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     reflect    = new Reflect(this);
     transform  = vtkTransform::New();
     refOperate = vtkTransformFilter::New();
+    connect(reflect, &Reflect::accepted, this, [&]() {
+        int type = reflect->getOperateType();
+        switch (reflect->getOperateType()) {
+            case 0:
+                field->mirror(true, reflect->getMirrorPlane(),
+                              reflect->getCoordsOfOrigin(),
+                              reflect->getRotation());
+                showMirrorField();
+                break;
+        }
+    });
 }
 
 /*  ============================================================================
@@ -496,9 +507,6 @@ void Viewer::showMirrorField() {
         /*  update the model or field flag  */
         isModelMode = false;
 
-        /*  assign the recorder */
-        recorder[0] = 4;
-
         /*  get the field index and its component  */
         int index = recorder[1];
         int comp  = recorder[2];
@@ -507,47 +515,42 @@ void Viewer::showMirrorField() {
         std::stringstream name;
         name << field->getPointDataArrayName(index) << ":" << compName[comp];
 
-        /*  Create the LOOKUP table  */
-        //  update the range of field data
-        if (isAutoLegend) {
-            lut->SetNumberOfTableValues(numIntervals);
-            lut->SetTableRange(ugridFieldCur->GetPointData()
-                                   ->GetArray(name.str().c_str())
-                                   ->GetRange());
-        }
-        /*  setup the mirror plane operation  */
-        bool* mirrorFlags = reflect->getMirrorPlane();
-        double scale[3];
-        scale[0] = mirrorFlags[0] ? -1.0 : 1.0;
-        scale[1] = mirrorFlags[1] ? -1.0 : 1.0;
-        scale[2] = mirrorFlags[2] ? -1.0 : 1.0;
-        transform->Scale(scale[0], scale[1], scale[2]);
+        /*  define the data and port in current  */
+        ugridFieldCur = field->getMirrorOutput();
+        portFieldCur  = field->getMirrorOutputPort();
 
-        /*  setup the mirror operation  */
-        refOperate->SetTransform(transform);
-        refOperate->SetInputConnection(portFieldCur);
+        /*  update the LOOKUP table  */
+        lut->SetNumberOfTableValues(numIntervals);
+        lut->SetTableRange(ugridFieldCur->GetPointData()
+                               ->GetArray(name.str().c_str())
+                               ->GetRange());
+        lut->Build();
+        // configScalarBar();
+        // scalarBar->SetLookupTable(lut);
+        // scalarBar->SetTitle(name.str().c_str());
+        // render->AddActor(scalarBar);
+        // isScalarBarPlayed = true;
 
-        /*  setup the poly data mapper  */
-        polyMapper->RemoveAllInputConnections(0);
-        polyMapper->AddInputConnection(refOperate->GetOutputPort());
-        polyMapper->SetLookupTable(lut);
-        polyMapper->ScalarVisibilityOn();
-        polyMapper->SetScalarModeToUsePointFieldData();
-        polyMapper->SelectColorArray(name.str().c_str());
-        polyMapper->SetScalarRange(lut->GetRange());
-        actor->SetMapper(polyMapper);
+        // /*  setup the mapper  */
+        // dtMap->SetInputConnection(portFieldCur);
 
-        /*  configure the scalar bar  */
-        if (!isScalarBarPlayed) {
-            configScalarBar();
-            scalarBar->SetLookupTable(lut);
-            scalarBar->SetTitle(name.str().c_str());
-            render->AddActor(scalarBar);
-            isScalarBarPlayed = true;
-        }
+        // /*  set the anchor of the warpper  */
+        // dtMap->SetInputArrayToProcess(0, 0, 0,
+        //                               vtkDataObject::FIELD_ASSOCIATION_POINTS,
+        //                               name.str().c_str());
+        // dtMap->SetScalarVisibility(1);
+        // dtMap->SetScalarModeToUsePointData();
+        // dtMap->SelectColorArray(name.str().c_str());
+        // dtMap->SetLookupTable(lut);
+        // dtMap->SetScalarRange(lut->GetRange());
 
-        /*  Render the window  */
-        renWin->Render();
+        // /*  Setup the actor  */
+        // actor->SetMapper(dtMap);
+        // render->AddActor2D(scalarBar);
+
+        // /*  Render the window  */
+        // renWin->Render();
+        update();
     }
 }
 

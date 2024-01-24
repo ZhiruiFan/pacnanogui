@@ -19,11 +19,15 @@
 
 /*  INCLUDES  */
 #include <vtkAlgorithmOutput.h>
+#include <vtkAppendFilter.h>
 #include <vtkCellData.h>
+#include <vtkCleanUnstructuredGrid.h>
 #include <vtkContourFilter.h>
 #include <vtkDoubleArray.h>
 #include <vtkPointData.h>
 #include <vtkThreshold.h>
+#include <vtkTransform.h>
+#include <vtkTransformFilter.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkWarpVector.h>
 #include <vtkXMLUnstructuredGridReader.h>
@@ -37,40 +41,45 @@
  *      Mises stress, design variables in Topology optimization and so on)  */
 class Field {
 private:
-    QString name;                          // the name of the filed
-    int numPointField;                     // number of nodal field variables
-    int numCellField;                      // number of element filed variables
+    QString name;                           // the name of the filed
+    int numPointField;                      // number of nodal field variables
+    int numCellField;                       // number of element filed variables
 
-    bool ifMeshed;                         // whether show the mesh
+    bool ifMeshed;                          // whether show the mesh
 
-    vtkXMLUnstructuredGridReader* reader;  // reader of the vtu file
-    vtkUnstructuredGrid* ugrid;            // grid of the FEM model
-    vtkAlgorithmOutput* portAll;           // complete port of vtu file
+    vtkXMLUnstructuredGridReader* reader;   // reader of the vtu file
+    vtkUnstructuredGrid* ugrid;             // grid of the FEM model
+    vtkAlgorithmOutput* portAll;            // complete port of vtu file
 
-    vtkUnstructuredGrid* ugridCur;         // current operated data
-    vtkAlgorithmOutput* portCur;           // current port
+    vtkUnstructuredGrid* ugridCur;          // current operated data
+    vtkAlgorithmOutput* portCur;            // current port
 
-    vtkPointData* pointData;               // point data of the vtu file
-    int idxU;                              // index of the displacement field
-    vtkWarpVector* warp;                   // warper of the FEM mdoel
-    double warpScale;                      // warp scale coefficient
+    vtkPointData* pointData;                // point data of the vtu file
+    int idxU;                               // index of the displacement field
+    vtkWarpVector* warp;                    // warper of the FEM mdoel
+    double warpScale;                       // warp scale coefficient
 
-    vtkThreshold* denFilter;               // threshold of cell data
-    vtkCellData* cellData;                 // cell data of vtu file
-    int idxDen;                            // index of element density
-    int limitType;                         // the limit type
-    double upperLimit;                     // upper limit of displayed field
-    double lowerLimit;                     // lower limit of displayed field
-    double dataRange[2];                   // range of the current field
+    vtkThreshold* denFilter;                // threshold of cell data
+    vtkCellData* cellData;                  // cell data of vtu file
+    int idxDen;                             // index of element density
+    int limitType;                          // the limit type
+    double upperLimit;                      // upper limit of displayed field
+    double lowerLimit;                      // lower limit of displayed field
+    double dataRange[2];                    // range of the current field
 
-    double pickValue;                      // value for picked sequence
-    bool isPicked;                         // has cells been picked
-    vtkThreshold* pickFilter;              // filter for picking
-    vtkDataArray* pickArray;               // array for picking
+    double pickValue;                       // value for picked sequence
+    bool isPicked;                          // has cells been picked
+    vtkThreshold* pickFilter;               // filter for picking
+    vtkDataArray* pickArray;                // array for picking
 
-    vtkContourFilter* contourFilter;       // contour ploting object
+    vtkContourFilter* contourFilter;        // contour ploting object
 
-    char compName[3] = {'X', 'Y', 'Z'};    // component name
+    vtkTransform* transform;                // stransform object
+    vtkTransformFilter* transformFilter;    // filter for transforming
+    vtkAppendFilter* appendFilter;          // append filter
+    vtkCleanUnstructuredGrid* cleanFilter;  // clean the duplicated data
+
+    char compName[3] = {'X', 'Y', 'Z'};     // component name
 
 public:
     /*  ########################################################################
@@ -122,6 +131,24 @@ public:
      *  @param  idx: the index of the point data
      *  @return  the name of the point data array  */
     const char* getPointDataArrayName(const int& idx);
+
+public:
+    /*  mirror: mirror the unstructured grid according to the specifed
+     *  parameters
+     *  @param  isUseAll: whether the all ugrid is used or not?
+     *  @param  plane: determine the XY, YZ, XZ plane is used or not?
+     *  @param  offset: offset of the original points
+     *  @param  rotation: rotation angles along each axis  */
+    void mirror(const bool isUseAll, const bool* planes, const double* offset,
+                const double* rotation);
+
+    /*  getMirrorOutput: get the ugrid after mirror operation
+     *  @return  the unstrictured grid after mirror operation  */
+    vtkUnstructuredGrid* getMirrorOutput();
+
+    /*  getMirrorOutput: get the data port after mirror operation
+     *  @return  the data port after mirror operation  */
+    vtkAlgorithmOutput* getMirrorOutputPort();
 
 public:
     /*  ########################################################################

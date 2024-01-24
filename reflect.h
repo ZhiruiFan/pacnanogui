@@ -50,9 +50,22 @@ public:
     /*  destructor: destroy the Reflect object  */
     ~Reflect();
 
+    /*  getOperateType: get the type of the operation
+     *  @return  the type fo the operation, i.e., mirror, rectangular or
+     *  circlular array patterns  */
+    int getOperateType() { return type; }
+
     /*  getMirrorPlane: the the information of the Mirror operation
      *  @return   the flags for the mirror planes  */
     bool *getMirrorPlane() { return mirrorFlag; }
+
+    /*  getCoordsOfOrigin: get the coordinates of the new original point
+     *  @return  the coordinates of the new orginal point  */
+    double *getCoordsOfOrigin() { return coords; }
+
+    /*  getAxisRotation: get the rotation along each axis
+     *  @return  the rotation angles  */
+    double *getRotation() { return angle; }
 
 private slots:
     /*  reset: reset the information in the dialog  */

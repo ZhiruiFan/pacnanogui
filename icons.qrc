@@ -107,5 +107,6 @@
         <file>icons/reflection.png</file>
         <file>icons/smooth.png</file>
         <file>icons/extract_surf.png</file>
+        <file>icons/mirror_grey.png</file>
     </qresource>
 </RCC>
