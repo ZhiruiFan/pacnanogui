@@ -60,39 +60,38 @@ class Viewer : public QWidget {
     Q_OBJECT
 
 private:
-    Field* field;                                  // filed to be shown
-    int recorder[3];                               // filed varaible recorder
-    bool isModelCreated;                           // field assignment flag
-    bool isModelLoaded;                            // has model loaded
-    bool isFieldLoaded;                            // has field loaded
-    bool isInitViewerPort;                         // flag for initialize vp
-    bool isModelMode;                              // model mode is shown
-    bool isFieldMode;                              // field mode is shown
-    bool isPickHideModel;                          // will hide picked cells
+    Field* field;                          // filed to be shown
+    int recorder[3];                       // filed varaible recorder
+    int operateType;                       // id to define which source is used
+    bool isModelLoaded;                    // has model loaded
+    bool isFieldLoaded;                    // has field loaded
+    bool isInitViewerPort;                 // flag for initialize vp
+    bool viewMode;                         // model or field mode
+    bool isPickHideModel;                  // will hide picked cells
 
-    Camera* camera;                                // camera configuration
-    Post* post;                                    // postprocessing config
+    Camera* camera;                        // camera configuration
+    Post* post;                            // postprocessing config
 
-    QVTKOpenGLNativeWidget* win;                   // main window
-    vtkGenericOpenGLRenderWindow* renWin;          // render window
-    vtkRenderer* render;                           // render object
-    vtkActor* actor;                               //  actor of the viewerport
-    vtkDataSetMapper* dtMap;                       // data set mapper
-    vtkNamedColors* colors;                        // color object
+    QVTKOpenGLNativeWidget* win;           // main window
+    vtkGenericOpenGLRenderWindow* renWin;  // render window
+    vtkRenderer* render;                   // render object
+    vtkActor* actor;                       //  actor of the viewerport
+    vtkDataSetMapper* dtMap;               // data set mapper
+    vtkNamedColors* colors;                // color object
 
-    vtkLookupTable* lut;                           // lookup table
-    vtkCamera* originCamera;                       // original camera
-    vtkAxesActor* actaxis;                         // axis actor
-    vtkOrientationMarkerWidget* axis;              // axis object
-    vtkScalarBarActor* scalarBar;                  // scalar bar
-    bool isScalarBarPlayed;                        // the scalarbar is acted
-    vtkTextActor* status;                          // status bar
-    std::stringstream time;                        // current time
+    vtkLookupTable* lut;                   // lookup table
+    vtkCamera* originCamera;               // original camera
+    vtkAxesActor* actaxis;                 // axis actor
+    vtkOrientationMarkerWidget* axis;      // axis object
+    vtkScalarBarActor* scalarBar;          // scalar bar
+    bool isScalarBarPlayed;                // the scalarbar is acted
+    vtkTextActor* status;                  // status bar
+    std::stringstream time;                // current time
 
-    vtkAlgorithmOutput* pickSource;                // source for picking
-    vtkThreshold* pickThreshold;                   // threshold for picker
-    Pick* pick;                                    // pick object
-    vtkRenderWindowInteractor* interact;           // interactor
+    vtkAlgorithmOutput* pickSource;        // source for picking
+    vtkThreshold* pickThreshold;           // threshold for picker
+    Pick* pick;                            // pick object
+    vtkRenderWindowInteractor* interact;   // interactor
     vtkInteractorStyleTrackballCamera* initStyle;  // initial style
     vtkAlgorithmOutput* portModelCur;              // current port for model
     vtkAlgorithmOutput* portFieldCur;              // current port for field
@@ -186,34 +185,30 @@ public:
      *  initPointField: initialize the specified point field from the original
      *  vtu files
      *  @param  idx: the index of point data that will be shown
-     *  @param  comp: the component of the point data that will be extracted  */
-    void initPointField(const int& idx, const int& comp);
-
-    /*  updatePointField: update filed information with respect to the nodes,
-     *  it includes the nodal displacement, reaction force and so on  */
-    void updatePointField();
+     *  @param  comp: the component of the point data that will be extracted
+     *  @param  mode: update mode or generate mode  */
+    void initPointField(const int& idx, const int& comp, const bool& mode);
 
     /*  showColorField: display the information with respect to the nodes,
      *  it includes the nodal displacement, reaction force and so on  */
     void showColorField();
 
+    /*  showArrowField: show the data using the arrow  */
+    void showArrowField();
+
     /*  showFieldGeometry: display the information with respect to the nodes,
      *  it includes the nodal displacement, reaction force and so on  */
     void showFieldGeometry();
 
-    /*  showMirrorField: show the reflected field according to the specified
+    /*  initMirrorField: show the reflected field according to the specified
      *  parameters  */
-    void showMirrorField();
+    void initMirrorField();
 
     /*  showCellField: display the information with respect to the elements,
      *  it includes the stress components, design variables in topology
      *  optimization and so on
      *  @param  idx: the index of the component in the data set  */
     void showCellField(const int& idx);
-
-public:
-    /*  showArrowField: show the data using the arrow  */
-    void showArrowField();
 
 private:
     /*  ########################################################################

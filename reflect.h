@@ -44,6 +44,8 @@ private:
     double coords[3];        // coordinates of original points
     double angle[3];         // rotation angle of from the original axis
 
+    bool isFullModel;        // whether the full model is used
+
 public:
     /*  constructor: create the Reflect object  */
     explicit Reflect(QWidget *parent = nullptr);
@@ -66,6 +68,11 @@ public:
     /*  getAxisRotation: get the rotation along each axis
      *  @return  the rotation angles  */
     double *getRotation() { return angle; }
+
+    /*  isUseFullModel: get the status that wheter the full model or current
+     *  model is used for mirroring operation
+     *  @return  whether the full model is used for mirroring  */
+    bool isUseFullModel() { return isFullModel; }
 
 private slots:
     /*  reset: reset the information in the dialog  */

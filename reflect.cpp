@@ -111,6 +111,10 @@ void Reflect::reset() {
     ui->rotationX->setValue(0.0);
     ui->rotationY->setValue(0.0);
     ui->rotationZ->setValue(0.0);
+
+    /*  using full model or not  */
+    ui->useModelAll->setChecked(false);
+    ui->useModelCur->setChecked(true);
 }
 
 /*  ############################################################################
@@ -151,6 +155,9 @@ void Reflect::save() {
     angle[1]   = ui->rotationY->value();
     angle[2]   = ui->rotationZ->value();
     totalAngle = ui->circularTotalAngle->value();
+
+    /*  whether the full model is used  */
+    isFullModel = ui->useModelAll->isChecked() ? true : false;
 
     /*  accept the dialog  */
     accept();

@@ -16,6 +16,9 @@
 
 #include "viewer.h"
 
+#include "prenano.h"
+using namespace PRENANO;
+
 /*  ############################################################################
  *  Constructor: create the viewer object the initialize the diply
  *  @param  window: the object to the show the FEM model  */
@@ -38,11 +41,10 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     render->SetBackground(colors->GetColor3d("White").GetData());
 
     /*  field variables  */
+    viewMode         = USE_MODEL_MODE;
     dtMap            = vtkDataSetMapper::New();
-    isModelCreated   = false;
     isModelLoaded    = false;
     isFieldLoaded    = false;
-    isModelMode      = true;
     isInitViewerPort = true;
 
     /*  Picker vriables  */
@@ -97,6 +99,8 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
     numIntervals = 12;
     isAutoLegend = false;
     connect(post, &Post::accepted, this, [&]() {
+        //  reset the operation flags
+        operateType = USE_ORIGIN_FIELD;
         //  assign parameters
         field->setWarpScale(post->getWarpScale());
         field->setLimits(post->getLimitType(), post->getLowerLimit(),
@@ -104,7 +108,7 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
         numIntervals = post->getNumIntervals();
         isAutoLegend = post->isUseAutoLegend();
         //  update viewerport
-        updatePointField();
+        initPointField(recorder[1], recorder[2], FIELD_GENERATE);
     });
 
     /*  reflect operation  */
@@ -115,10 +119,7 @@ Viewer::Viewer(QVTKOpenGLNativeWidget* window) {
         int type = reflect->getOperateType();
         switch (reflect->getOperateType()) {
             case 0:
-                field->mirror(true, reflect->getMirrorPlane(),
-                              reflect->getCoordsOfOrigin(),
-                              reflect->getRotation());
-                showMirrorField();
+                initMirrorField();
                 break;
         }
     });
@@ -161,7 +162,8 @@ void Viewer::setInputData(Field*& input) {
     ugridFieldCur = field->getInputData();
 
     /*  update the flag  */
-    isModelCreated = true;
+    isModelLoaded = true;
+    operateType   = USE_ORIGIN_FIELD;
 
     /*  initialize the filed  */
     field->checkAnchor();
@@ -202,10 +204,23 @@ void Viewer::showCompleteModel() {
     /*  check the status  */
     if (isModelLoaded) {
         /*  reset the unstructured grid to original  */
-        field->resetCellPick();
+        field->resetCellPick(operateType);
         portModelCur  = field->getInputPort();
-        portFieldCur  = field->getThresholdOutputPort();
         ugridFieldCur = field->getInputData();
+        /*  update the anchor in field  */
+        field->updateAnchor();
+        /*  update the field data port  */
+        switch (operateType) {
+            //  use the original field
+            case USE_ORIGIN_FIELD:
+                portFieldCur = field->getThresholdOutputPort();
+                break;
+            //  use mirrored field
+            case USE_MIRROR_FIELD:
+                portFieldCur = field->getMirrorOutputPort();
+                break;
+        }
+        /*  update the display  */
         update();
     }
 }
@@ -215,10 +230,10 @@ void Viewer::showCompleteModel() {
  *  @param  index: the index of the model that will be shown  */
 void Viewer::showModel() {
     /*  check the field is assigned or not  */
-    if (isModelCreated) {
+    if (isModelLoaded) {
         /*  assign the flags  */
         recorder[0] = 0;
-        isModelMode = true;
+        viewMode    = USE_MODEL_MODE;
 
         /*  reset the interactor style  */
         pick->turnOff();
@@ -253,7 +268,6 @@ void Viewer::showModel() {
 
         /*  update the model loaded flag  */
         isModelLoaded = true;
-        isModelMode   = true;
     }
 }
 
@@ -280,78 +294,40 @@ void Viewer::showMesh() {
  *  initPointField: initialize the specified point field from the original
  *  vtu files
  *  @param  idx: the index of point data that will be shown
- *  @param  comp: the component of the point data that will be extracted  */
-void Viewer::initPointField(const int& idx, const int& comp) {
+ *  @param  comp: the component of the point data that will be extracted
+ *  @param  mode: update mode or generate mode  */
+void Viewer::initPointField(const int& idx, const int& comp, const bool& mode) {
+    /*  update the flags  */
+    isFieldLoaded = true;
+
     /*  assign the recorder  */
     recorder[1] = idx;
     recorder[2] = comp;
 
-    /*  Get the the field  */
-    vtkDataArray* dtOld = field->getPointDataArray(idx);
-
-    /*  Config the status bar  */
-    QString info = "Plot the calculated field of the finite element model.";
-    configStatusBar(field->getPathName(), info);
-
-    /*  Create the temporary variable to show field  */
-    vtkDoubleArray* dtCur = vtkDoubleArray::New();
-    dtCur->SetNumberOfComponents(1);
-
-    /*  Extract the components in the field  */
-    std::stringstream name;
-    if (comp < 3) {
-        //  extract the sub components
-        for (vtkIdType i = 0; i < dtOld->GetNumberOfTuples(); ++i) {
-            dtCur->InsertNextValue(dtOld->GetTuple(i)[comp]);
-        }
-        //  determine the name of the components
-        name << dtOld->GetName() << ":" << compName[comp];
-    } else {
-        // extract the amplitude of the field
-        double x, y, z;
-        for (vtkIdType i = 0; i < dtOld->GetNumberOfTuples(); ++i) {
-            x = dtOld->GetTuple(i)[0];
-            y = dtOld->GetTuple(i)[1];
-            z = dtOld->GetTuple(i)[2];
-            dtCur->InsertNextValue(sqrt(x * x + y * y + z * z));
-        }
-        //  determine the name of the components
-        name << dtOld->GetName() << ": total";
+    /*  regenerate the field variable if needed  */
+    if (mode == FIELD_GENERATE) {
+        //  update the field variables
+        field->updateAnchor();
+        ugridFieldCur = field->getThresholdOutput();
+        portFieldCur  = field->getThresholdOutputPort();
+        //  reset the viewer port
+        render->ResetCamera();
     }
 
-    //  assign the name of the components
-    dtCur->SetName(name.str().c_str());
-    field->addPointData(dtCur);
-
     /*  Create the LOOKUP table  */
+    std::stringstream name;
+    name << field->getFieldName(idx) << ":" << field->getCompName(comp);
+    std::string arrayName;
+    arrayName.assign(name.str());
     lut->SetHueRange(0.667, 0.0);
-    lut->SetTableRange(dtCur->GetRange());
+    lut->SetTableRange(field->getThresholdRange(name.str().data()));
     lut->Build();
 
-    /*  set the input port of the field  */
-    field->resetCellPick();
-    updatePointField();
-
-    /*  update the flags  */
-    isFieldLoaded = true;
-}
-
-/*  ============================================================================
- *  updatePointField: update filed information with respect to the nodes,
- *  it includes the nodal displacement, reaction force and so on  */
-void Viewer::updatePointField() {
-    //  update the anchor
-    field->resetCellPick();
-    ugridFieldCur = field->getThresholdOutput();
-    portFieldCur  = field->getThresholdOutputPort();
-
-    //  update the viewerport
-    configScalarBar();
-    render->ResetCamera();
+    /*  update the viewer port  */
     update();
 }
 
-/*  ############################################################################
+/*  ============================================================================
  *  showPointField: display the information with respect to the nodes,
  *  it includes the nodal displacement, reaction force and so on
  *  @param  field: the field that to be shown
@@ -361,10 +337,68 @@ void Viewer::showColorField() {
     /*  check the if the model is loaded  */
     if (isFieldLoaded) {
         /*  update the model or field flag  */
-        isModelMode = false;
+        viewMode = USE_FIELD_MODE;
 
         /*  assign the recorder */
         recorder[0] = 1;
+
+        /*  get the field index and its component  */
+        int index = recorder[1];
+        int comp  = recorder[2];
+
+        /*  get the name of the field  */
+        std::stringstream name;
+        name << field->getFieldName(index) << ":" << field->getCompName(comp);
+        std::string fieldName = name.str();
+
+        /*  Create the LOOKUP table  */
+        //  update the range of field data
+        if (isAutoLegend) {
+            lut->SetNumberOfTableValues(numIntervals);
+            lut->SetTableRange(ugridFieldCur->GetPointData()
+                                   ->GetArray(name.str().c_str())
+                                   ->GetRange());
+        }
+        //  update the lookup table
+        lut->Build();
+
+        /*  configure the scalar bar  */
+        configScalarBar();
+        scalarBar->SetLookupTable(lut);
+        scalarBar->SetTitle(name.str().c_str());
+        render->AddActor(scalarBar);
+        isScalarBarPlayed = true;
+
+        /*  setup the mapper  */
+        dtMap->RemoveAllInputConnections(0);
+        dtMap->SetInputConnection(0, portFieldCur);
+
+        /*  set the anchor of the warpper  */
+        dtMap->SetLookupTable(lut);
+        dtMap->ScalarVisibilityOn();
+        dtMap->SetScalarModeToUsePointFieldData();
+        dtMap->SelectColorArray(name.str().c_str());
+        dtMap->SetScalarRange(lut->GetRange());
+
+        /*  Setup the actor  */
+        actor->SetMapper(dtMap);
+        render->AddActor2D(scalarBar);
+
+        /*  Render the window  */
+        renWin->Render();
+    }
+}
+
+/*  ============================================================================
+ *  showArrowField: show the data using the arrow  */
+void Viewer::showArrowField() {
+    /*  check the field is loaded or not  */
+    if (isFieldLoaded) {
+        /*  update the model or field flag  */
+        viewMode = USE_FIELD_MODE;
+
+        /*  assign the recorder */
+        recorder[0] = 2;
 
         /*  get the field index and its component  */
         int index = recorder[1];
@@ -385,53 +419,6 @@ void Viewer::showColorField() {
         //  update the lookup table
         lut->Build();
 
-        /*  configure the scalar bar  */
-        if (!isScalarBarPlayed) {
-            configScalarBar();
-            scalarBar->SetLookupTable(lut);
-            scalarBar->SetTitle(name.str().c_str());
-            render->AddActor(scalarBar);
-            isScalarBarPlayed = true;
-        }
-
-        /*  setup the mapper  */
-        dtMap->SetInputConnection(portFieldCur);
-
-        /*  set the anchor of the warpper  */
-        dtMap->SetScalarVisibility(1);
-        dtMap->SetScalarModeToUsePointData();
-        dtMap->SelectColorArray(name.str().c_str());
-        dtMap->SetLookupTable(lut);
-        dtMap->SetScalarRange(lut->GetRange());
-
-        /*  Setup the actor  */
-        actor->SetMapper(dtMap);
-        render->AddActor2D(scalarBar);
-
-        /*  Render the window  */
-        renWin->Render();
-    }
-}
-
-/*  ############################################################################
- *  showArrowField: show the data using the arrow  */
-void Viewer::showArrowField() {
-    /*  check the field is loaded or not  */
-    if (isFieldLoaded) {
-        /*  update the model or field flag  */
-        isModelMode = false;
-
-        /*  assign the recorder */
-        recorder[0] = 2;
-
-        /*  get the field index and its component  */
-        int index = recorder[1];
-        int comp  = recorder[2];
-
-        /*  get the name of the field  */
-        std::stringstream name;
-        name << field->getPointDataArrayName(index) << ":" << compName[comp];
-
         /*  setup the mapper  */
         gly->SetInputConnection(portFieldCur);
         gly->SetSourceConnection(arrow->GetOutputPort());
@@ -449,21 +436,19 @@ void Viewer::showArrowField() {
         polyMapper->SetScalarRange(lut->GetRange());
         actor->SetMapper(polyMapper);
 
-        /*  configure the scalar bar  */
-        if (!isScalarBarPlayed) {
-            configScalarBar();
-            scalarBar->SetLookupTable(lut);
-            scalarBar->SetTitle(name.str().c_str());
-            render->AddActor(scalarBar);
-            isScalarBarPlayed = true;
-        }
+        /*  configuration of the scalar bar  */
+        configScalarBar();
+        scalarBar->SetLookupTable(lut);
+        scalarBar->SetTitle(name.str().c_str());
+        render->AddActor(scalarBar);
+        isScalarBarPlayed = true;
 
         /*  Render the window  */
         renWin->Render();
     }
 }
 
-/*  ############################################################################
+/*  ============================================================================
  *  showFieldGeometry: display the information with respect to the nodes,
  *  it includes the nodal displacement, reaction force and so on  */
 void Viewer::showFieldGeometry() {
@@ -473,10 +458,10 @@ void Viewer::showFieldGeometry() {
         recorder[0] = 3;
 
         /*  assign the flags  */
-        isModelMode = false;
+        viewMode = USE_FIELD_MODE;
 
         /*  set the head information  */
-        QString info = "Geometry of the current model";
+        QString info = "Display the geometry of the current model";
         configStatusBar(field->getPathName(), info);
 
         /*  remove the scalar bar  */
@@ -499,57 +484,25 @@ void Viewer::showFieldGeometry() {
     }
 }
 
-/*  ############################################################################
- *  showMirrorField: show the reflected field according to the specified
+/*  ============================================================================
+ *  initMirrorField: show the reflected field according to the specified
  *  parameters  */
-void Viewer::showMirrorField() {
+void Viewer::initMirrorField() {
+    /*  generate the mirror field  */
+    field->mirror(reflect->isUseFullModel(), reflect->getMirrorPlane(),
+                  reflect->getCoordsOfOrigin(), reflect->getRotation());
+
+    /*  update the field information in viewer port  */
     if (isFieldLoaded) {
         /*  update the model or field flag  */
-        isModelMode = false;
-
-        /*  get the field index and its component  */
-        int index = recorder[1];
-        int comp  = recorder[2];
-
-        /*  get the name of the field  */
-        std::stringstream name;
-        name << field->getPointDataArrayName(index) << ":" << compName[comp];
+        viewMode    = USE_FIELD_MODE;
+        operateType = USE_MIRROR_FIELD;
 
         /*  define the data and port in current  */
         ugridFieldCur = field->getMirrorOutput();
         portFieldCur  = field->getMirrorOutputPort();
 
-        /*  update the LOOKUP table  */
-        lut->SetNumberOfTableValues(numIntervals);
-        lut->SetTableRange(ugridFieldCur->GetPointData()
-                               ->GetArray(name.str().c_str())
-                               ->GetRange());
-        lut->Build();
-        // configScalarBar();
-        // scalarBar->SetLookupTable(lut);
-        // scalarBar->SetTitle(name.str().c_str());
-        // render->AddActor(scalarBar);
-        // isScalarBarPlayed = true;
-
-        // /*  setup the mapper  */
-        // dtMap->SetInputConnection(portFieldCur);
-
-        // /*  set the anchor of the warpper  */
-        // dtMap->SetInputArrayToProcess(0, 0, 0,
-        //                               vtkDataObject::FIELD_ASSOCIATION_POINTS,
-        //                               name.str().c_str());
-        // dtMap->SetScalarVisibility(1);
-        // dtMap->SetScalarModeToUsePointData();
-        // dtMap->SelectColorArray(name.str().c_str());
-        // dtMap->SetLookupTable(lut);
-        // dtMap->SetScalarRange(lut->GetRange());
-
-        // /*  Setup the actor  */
-        // actor->SetMapper(dtMap);
-        // render->AddActor2D(scalarBar);
-
-        // /*  Render the window  */
-        // renWin->Render();
+        /*  update the viewerport  */
         update();
     }
 }
@@ -570,22 +523,28 @@ void Viewer::showCellField(const int& idx) {}
 void Viewer::activePickMode(const bool& mode) {
     /*  check the model is loaded or not  */
     if (isModelLoaded) {
-        /*  set the head information  */
-        QString info = "Geometry of the current model";
-        configStatusBar(field->getPathName(), info);
-
         /*  create the picker  */
-        if (isModelMode) {
+        if (viewMode == USE_MODEL_MODE) {
             pick->setSourcePort(field->getInputPort());
             pick->setInputData(portModelCur);
         } else {
-            pick->setSourcePort(field->getThresholdOutputPort());
+            /*  determine the source field for operation  */
+            switch (operateType) {
+                //  the initial field source
+                case USE_ORIGIN_FIELD:
+                    pick->setSourcePort(field->getThresholdOutputPort());
+                    break;
+                //  the mirrored field source
+                case USE_MIRROR_FIELD:
+                    pick->setSourcePort(field->getMirrorOutputPort());
+                    break;
+            }
             pick->setInputData(portFieldCur);
         }
         pick->setRenderInfo(render);
 
         /*  determine the selection mode */
-        if (mode) {
+        if (mode == USE_CELL_MODE) {
             pick->setCellSelectMode();
         } else {
             pick->setPointSelectMode();
@@ -596,7 +555,7 @@ void Viewer::activePickMode(const bool& mode) {
     }
 }
 
-/*  ############################################################################
+/*  ============================================================================
  *  hideCells: hide the cells selected by the picker  */
 void Viewer::handleCellPick(const bool& pickMode) {
     /*  Get the picker status  */
@@ -605,8 +564,8 @@ void Viewer::handleCellPick(const bool& pickMode) {
         cellIdsCur = pick->getSelectedCellIds();
 
         /*  update the current port  */
-        field->performCellPick(isModelMode, pickMode, cellIdsCur);
-        if (isModelMode) {
+        field->performCellPick(operateType, viewMode, pickMode, cellIdsCur);
+        if (viewMode == USE_MODEL_MODE) {
             portModelCur = field->getPickOutputPort();
         } else {
             portFieldCur  = field->getPickOutputPort();
@@ -705,14 +664,17 @@ void Viewer::configScalarBar() {
     /*  turn off the auto font setting */
     scalarBar->UnconstrainedFontSizeOn();
 
-    /*  set the title style  */
-    scalarBar->GetTitleTextProperty()->SetColor(0.0, 0.0, 0.0);
-    scalarBar->GetTitleTextProperty()->SetFontSize(20);
-    scalarBar->GetTitleTextProperty()->SetJustificationToLeft();
-    scalarBar->GetTitleTextProperty()->SetVerticalJustificationToTop();
-    scalarBar->GetTitleTextProperty()->SetFontFamilyToCourier();
-    scalarBar->GetTitleTextProperty()->SetBold(0);
-    scalarBar->GetTitleTextProperty()->SetItalic(0);
+    /*  set the position  */
+    int* renSize      = renWin->GetSize();
+    int legendHight   = 17 * numIntervals;
+    double leftMargin = 45.0 / renSize[0];
+    double topMargin  = 1.0 - (legendHight + 50.0) / renSize[1];
+    scalarBar->SetPosition(leftMargin, topMargin);
+    scalarBar->SetMaximumWidthInPixels(70);
+    scalarBar->SetMaximumHeightInPixels(legendHight);
+
+    /*  label data format  */
+    scalarBar->SetLabelFormat("%+.4e");
 
     /*  set the label style  */
     scalarBar->GetLabelTextProperty()->SetColor(0.0, 0.0, 0.0);
@@ -724,15 +686,12 @@ void Viewer::configScalarBar() {
     scalarBar->GetLabelTextProperty()->SetVerticalJustificationToBottom();
     scalarBar->SetNumberOfLabels(numIntervals);
 
-    /*  set the position  */
-    int* renSize      = renWin->GetSize();
-    int legendHight   = 17 * numIntervals;
-    double leftMargin = 32.0 / renSize[0];
-    double topMargin  = 1.0 - (legendHight + 32.0) / renSize[1];
-    scalarBar->SetPosition(leftMargin, topMargin);
-    scalarBar->SetMaximumWidthInPixels(70);
-    scalarBar->SetMaximumHeightInPixels(legendHight);
-
-    /*  label data format  */
-    scalarBar->SetLabelFormat("%+.4e");
+    /*  set the title style  */
+    scalarBar->GetTitleTextProperty()->SetColor(0.0, 0.0, 0.0);
+    scalarBar->GetTitleTextProperty()->SetFontSize(18);
+    scalarBar->GetTitleTextProperty()->SetJustificationToLeft();
+    scalarBar->GetTitleTextProperty()->SetVerticalJustificationToTop();
+    scalarBar->GetTitleTextProperty()->SetFontFamilyToCourier();
+    scalarBar->GetTitleTextProperty()->SetBold(0);
+    scalarBar->GetTitleTextProperty()->SetItalic(0);
 }

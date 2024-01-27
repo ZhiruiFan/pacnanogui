@@ -27,12 +27,12 @@ Open::Open(QWidget *parent, const int type)
     /*  DRIVERS  */
     pathCur = QDir::currentPath();
     dir     = new QFileSystemModel;
-    dir->setRootPath(pathCur);
+    dir->setRootPath("/");
     dir->setFilter(QDir::NoDotAndDotDot | QDir::AllDirs);
 
     /*  FILE EXPLORER  */
     file = new QFileSystemModel;
-    file->setRootPath(QDir::currentPath());
+    file->setRootPath(pathCur);
     //  assign the diag types
     flagDiag = type;
     //  define filters
@@ -115,11 +115,9 @@ Open::Open(QWidget *parent, const int type)
     //  initialize the filter
     switchSelctionType(0);
 
-    /*  VIEWERS  */
-    showListView();
-
     /*  COMBOBOX  */
     ui->dirExplorer->setModel(dir);
+    ui->dirExplorer->setRootModelIndex(dir->index("/"));
     ui->dirExplorer->setModelColumn(0);
     connect(ui->dirExplorer, &QComboBox::currentIndexChanged, this,
             &Open::changeDriver);
@@ -157,6 +155,10 @@ Open::Open(QWidget *parent, const int type)
     /*  FOLDER FILTER  */
     connect(ui->fileFilter, &QComboBox::currentIndexChanged, this,
             &Open::switchSelctionType);
+
+    /*  VIEWERS  */
+    showListView();
+    resetHome();
 }
 
 /*  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -339,8 +341,7 @@ void Open::selectFolderInTableView(const QModelIndex &index) {
         is changed. */
 void Open::changeDriver(int index) {
     //  get the path of the QComboBox
-    pathCur = file->fileInfo(ui->dirExplorer->model()->index(index, 0))
-                  .absoluteFilePath();
+    pathCur   = dir->filePath(dir->index(index, 0, dir->index("/")));
     rootIndex = file->index(pathCur);
     //  show the path viewer
     switch (flagView) {
@@ -394,6 +395,7 @@ void Open::navigateUp() {
  *  reset the directory to the home  */
 void Open::resetHome() {
     //  get the home path
+    ui->dirExplorer->setCurrentIndex(ui->dirExplorer->findText("home"));
     pathCur = QDir::currentPath();
     ui->btnBack->setEnabled(true);
 

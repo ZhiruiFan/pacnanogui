@@ -33,6 +33,7 @@
 #include <vtkXMLUnstructuredGridReader.h>
 
 #include <QString>
+#include <QStringList>
 
 /*  ############################################################################
  *  CLASS Field: the class to define the filed that will have a interaction with
@@ -48,7 +49,7 @@ private:
     bool ifMeshed;                          // whether show the mesh
 
     vtkXMLUnstructuredGridReader* reader;   // reader of the vtu file
-    vtkUnstructuredGrid* ugrid;             // grid of the FEM model
+    vtkUnstructuredGrid* ugridAll;          // grid of the FEM model
     vtkAlgorithmOutput* portAll;            // complete port of vtu file
 
     vtkUnstructuredGrid* ugridCur;          // current operated data
@@ -79,11 +80,13 @@ private:
     vtkAppendFilter* appendFilter;          // append filter
     vtkCleanUnstructuredGrid* cleanFilter;  // clean the duplicated data
 
-    char compName[3] = {'X', 'Y', 'Z'};     // component name
+    QStringList fieldNameList;              // name list of of the field
+    std::string fieldName;                  // field name
+    QStringList compNameList;               // name list of the components
+    std::string compName;                   // component name
 
 public:
-    /*  ########################################################################
-     *  constructor: create the Field object.
+    /*  constructor: create the Field object.
      *  @param  name: the name of the field     */
     Field(QString& _name);
 
@@ -91,30 +94,25 @@ public:
      *  data, cell data, port, set, warp and so on   */
     ~Field();
 
-public:
-    /*  ########################################################################
-     *  checkAnchor: check the anchor filed variable is included or not?
-     *  @return  the checked status, ture for sucessed, otherwise failed  */
-    bool checkAnchor();
+    /*  getPathName: get the full path name of the field varaible
+     *  @return  the path of the current model  */
+    QString& getPathName();
 
-    /*  updateAnchor: update the anchor field  */
-    void updateAnchor();
+    /*  getInputPort: get the initial port, i.e., the input port of the field
+     *  variables
+     *  @return  the initial port of the field data  */
+    vtkAlgorithmOutput* getInputPort();
 
-public:
-    /*  ########################################################################
-     *  addPointData: add a new point data to the field
-     *  @param  pointDataArray: the array will be added to the field  */
-    void addPointData(vtkDoubleArray* data);
+    /*  getInputData: get the initial unstructured grid of the field
+     *  @return  the initial ugrid  */
+    vtkUnstructuredGrid* getInputData();
 
-    /*  setWarpScale: set the coefficient of the warping scale
-     *  @param  scale: the warping scale  */
-    void setWarpScale(const double& scale);
+    /*  initliztePointData: initialize the point data in the field  */
+    void initializePointData();
 
-    /*  setLimitType: set the type of the threshold limination
-     *  @param  type: the type of the limit
-     *  @param  lower: the lower limit value
-     *  @param  upper: the upper limit value  */
-    void setLimits(const int& type, const double& upper, const double& uper);
+    /*  getNumberOfPointData: get the number of the point datas in the field
+     *  @return  the number of the point data  */
+    int getNumberOfPointData();
 
     /*  getPointDataArray: get the point data from the field
      *  @param  name: the name of the point data
@@ -131,6 +129,53 @@ public:
      *  @param  idx: the index of the point data
      *  @return  the name of the point data array  */
     const char* getPointDataArrayName(const int& idx);
+
+    /*  addPointData: add a new point data to the field
+     *  @param  pointDataArray: the array will be added to the field  */
+    void addPointData(vtkDoubleArray* data);
+
+    /*  getNumberOfCellData: get the number of the cell datas in the field
+     *  @the number of cell data  */
+    int getNumberOfCellData();
+
+public:
+    /*  setWarpScale: set the coefficient of the warping scale
+     *  @param scale: the warping scale */
+    void setWarpScale(const double& scale);
+
+    /*  setLimitType: set the type of the threshold limination
+     *  @param  type: the type of the limit
+     *  @param  lower: the lower limit value
+     *  @param  upper: the upper limit value  */
+    void setLimits(const int& type, const double& upper, const double& uper);
+
+    /*  checkAnchor: check the anchor filed variable is included or not?
+     *  @return  the checked status, ture for sucessed, otherwise failed  */
+    bool checkAnchor();
+
+    /*  updateAnchor: update the anchor field  */
+    void updateAnchor();
+
+    /*  getWarpOutputPort: get the output port of the warper
+     *  @return  the data port after warping operation  */
+    vtkAlgorithmOutput* getWarpOutputPort();
+
+    /*  getWarpOutput: get the output data of the warper
+     *  @return  the data port after warping operation  */
+    vtkPointSet* getWarpOutput();
+
+    /*  getThresholdOutputPort: get the output port of the threshold
+     *  @return  the data port after threshold operation  */
+    vtkAlgorithmOutput* getThresholdOutputPort();
+
+    /*  getThresholdOutput: get the output ugrid of the threshold
+     *  @return  the data after threshold operation  */
+    vtkUnstructuredGrid* getThresholdOutput();
+
+    /*  getThresholdRange: get the range of the point after density filter
+     *  operation
+     *  @return  the range of the point data  */
+    double* getThresholdRange(char* name);
 
 public:
     /*  mirror: mirror the unstructured grid according to the specifed
@@ -151,13 +196,13 @@ public:
     vtkAlgorithmOutput* getMirrorOutputPort();
 
 public:
-    /*  ########################################################################
-     *  performCellPick: do the cell picking operation
+    /*  performCellPick: do the cell picking operation
+     *  @param  operateType: the source type of the field data
      *  @param  isModelMode: picking for model or field?
      *  @param  isHided: hide cells or extract cells
      *  @param  cellIdsCur: the selected cells that will be used for picking */
-    void performCellPick(const bool isModelMode, const bool isHided,
-                         vtkIdTypeArray* cellIdsCur);
+    void performCellPick(const int operateType, const bool isModelMode,
+                         const bool isHided, vtkIdTypeArray* cellIdsCur);
 
     /*  getPickOutputPort: get the output port after picking operation
      *  @return  the port of the pick filter  */
@@ -167,8 +212,9 @@ public:
      *  @return  the data after the pick filter  */
     vtkUnstructuredGrid* getPickOutput();
 
-    /*  resetCellPick: reset the cell picking  */
-    void resetCellPick();
+    /*  resetCellPick: reset the cell picking according to the operate type
+     *  @param  operateType: the type of the operation  */
+    void resetCellPick(const int operateType);
 
     /*  getCurrentPointDataRange: get the currently displayed scalar range
      *  @param  idx: the index of the point data
@@ -176,54 +222,43 @@ public:
     double* getCurrentPointDataRange(const int idx, const int comp);
 
 public:
-    /*  ########################################################################
-     *  getPathName: get the full path name of the field varaible  */
-    QString& getPathName();
+    /*  getFieldNameList: get the list of the field name
+     *  @return  the name list of the fields  */
+    QStringList& getFieldNameList() { return fieldNameList; }
 
-    /*  getInputPort: get the initial port, i.e., the input port of the field
-     *  variables  */
-    vtkAlgorithmOutput* getInputPort();
+    /*  getFieldName: get the field name according to the index
+     *  @param  index: the index of the field
+     *  @return  the name of the field  */
+    char* getFieldName(int idx) {
+        fieldName.clear();
+        fieldName.assign(fieldNameList[idx].toStdString());
+        return fieldName.data();
+    }
 
-    /*  getInputData: get the initial unstructured grid of the field
-     *  @return  the ugrid  */
-    vtkUnstructuredGrid* getInputData();
+    /*  getCompName: get the name of components in field
+     *  @return  the name list of the components  */
+    QStringList& getCompNameList() { return compNameList; }
 
-    /*  getWarpOutputPort: get the output port of the warper
-     *  @return  the data port after warping operation  */
-    vtkAlgorithmOutput* getWarpOutputPort();
+    /*  getCompName: get the field name according to the index
+     *  @param  index: the index of the field
+     *  @return  the name of the field  */
+    char* getCompName(int idx) {
+        compName.clear();
+        compName.assign(compNameList[idx].toStdString());
+        return compName.data();
+    }
 
-    /*  getWarpOutput: get the output data of the warper
-     *  @return  the data port after warping operation  */
-    vtkPointSet* getWarpOutput();
-
-    /*  getThresholdOutputPort: get the output port of the threshold
-     *  @return  the data port after threshold operation  */
-    vtkAlgorithmOutput* getThresholdOutputPort();
-
-    /*  getThresholdOutput: get the output ugrid of the threshold
-     *  @return  the data after threshold operation  */
-    vtkUnstructuredGrid* getThresholdOutput();
-
+public:
     /*  getCellDataArray: get the array amoung the all cell data
      *  @param  idx: the index of the cell data array  */
     vtkDataArray* getCellDataArray(const int& idx);
-
-public:
-    /*  ########################################################################
-     *  initContour: initialize the environment for the contour plot*/
-    void initContour();
-
-    /*  getContourOutput: get the output data of the contour
-     *  @return  the ouput data after contour filter  */
-    vtkPolyData* getContourOutput();
-
-    /*  getContourOutputPort: get the port with respect to contour filter
-     *  @return  the port after contour filter  */
-    vtkAlgorithmOutput* getContourOutputPort();
 
 private:
     /*  createNodalSet: create the node set using the given node sequence or by
      *  selecting from the viewerport  */
     void createNodalSet(double*& seq);
+
+    /*  assignFieldNameList: determine the list of combo box in viewerport  */
+    void assignFieldNameList();
 };
 #endif  // FIELD_H

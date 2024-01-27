@@ -36,11 +36,11 @@ private:
     QFileSystemModel* dir;        // model to read the directory
     QFileSystemModel* file;       // modle to read the files in current
 
-    int         flagView;         // flag to determine which viewer is actived
-    int         flagDiag;         // flag to detemine the dialog types
-    QString     pathCur;          // current directory path
+    int flagView;                 // flag to determine which viewer is actived
+    int flagDiag;                 // flag to detemine the dialog types
+    QString pathCur;              // current directory path
     QModelIndex rootIndex;        // file root index
-    QDir        parentDir;        // file parent index
+    QDir parentDir;               // file parent index
 
     std::vector<int> filterFlag;  // flags for filter
 
@@ -81,6 +81,13 @@ public:
 
     /*  Get the content of the selected file or path  */
     void getSelectContent(QString& text);
+
+protected:
+    void showEvent(QShowEvent* event) override {
+        QDialog::showEvent(event);
+        showListView();
+        resetHome();
+    }
 
 private:
     Ui::Open* ui;

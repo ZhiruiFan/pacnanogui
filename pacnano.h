@@ -50,15 +50,8 @@ private:
     QToolBar *innerToolBar;  // inner tool bar for user interaction
     QList<Field *> fields;   // list of fields
 
-private:
-    bool USE_MODEL_MODE;     // operation is for model
-    bool USE_FIELD_MODE;     // operation is for field variable
-
-    bool USE_CELL_MODE;      // pick up cells
-    bool USE_NODE_MODE;      // pick up points
-
-    bool USE_HIDE_MODE;      // operation is for hiding cells
-    bool USE_EXTRACT_MODE;   // operation is for extracting cells
+    bool isInPostMode;       // whether is in post mode
+    bool isFieldLoad;        // whether field is load
 
 public:
     /*  constructor :

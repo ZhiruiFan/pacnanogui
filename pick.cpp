@@ -80,7 +80,8 @@ void Pick::setField(Field* input) {
     extractor->SetInputConnection(0, idFilter->GetOutputPort());
 }
 
-/*  setPolyData: assign the poly data to the current object
+/*  ============================================================================
+ *  setPolyData: assign the poly data to the current object
  *  @param  input: the unstructured grid be operated  */
 void Pick::setInputData(vtkUnstructuredGrid* input) {
     /*  set the input of the geometry extractor  */

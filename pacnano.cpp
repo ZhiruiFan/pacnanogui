@@ -16,20 +16,12 @@
 #include "pacnano.h"
 
 #include "./ui_pacnano.h"
+#include "prenano.h"
+using namespace PRENANO;
 
 pacnano::pacnano(QWidget* parent) : QMainWindow(parent), ui(new Ui::pacnano) {
     /*  CREATE UI  */
     ui->setupUi(this);
-
-    /*  Initialize the mode flags  */
-    USE_MODEL_MODE   = true;
-    USE_FIELD_MODE   = false;
-
-    USE_HIDE_MODE    = true;
-    USE_EXTRACT_MODE = false;
-
-    USE_CELL_MODE    = true;
-    USE_NODE_MODE    = false;
 
     /*  Open forder  */
     openDir = new Open(this, 0);
@@ -83,12 +75,13 @@ void pacnano::setupViewportSwitch() {
     ui->vpSwtich->setCurrentIndex(0);
     ui->vpToolBar->setCurrentIndex(0);
     ui->innerTool->setCurrentIndex(0);
+    isInPostMode = false;
 
     // Function: change the viewport using ComboBox
     connect(ui->vpSwtich, &QComboBox::currentIndexChanged, this,
             [&](int index) {
                 ui->vpToolBar->setCurrentIndex(index);
-                if (4 == index) ui->innerTool->setCurrentIndex(1);
+                isInPostMode = index == 4 ? true : false;
             });
 
     //  Function: menu action to show project viewport
@@ -232,21 +225,30 @@ void pacnano::setupMaterialCreation() {
  *  viewport and so on   */
 void pacnano::setupRenderWindow() {
     /*  Create the render window  */
-    renWin = new Viewer(ui->viewWindow);
+    renWin      = new Viewer(ui->viewWindow);
+    isFieldLoad = false;
 
     /*  ************************************************************************
      *  Open results files  */
     connect(ui->btnPostOpen, &QPushButton::clicked, openRst, &QDialog::show);
     connect(ui->actPostOpen, &QAction::triggered, openDir, &QDialog::show);
     connect(openRst, &Open::accepted, this, [&]() {
+        //  get the opened file name
         QString rstFile = "";
         openRst->getSelectContent(rstFile);
         fields.append(new Field(rstFile));
         renWin->setInputData(fields.last());
         ui->mainView->setCurrentIndex(1);
         ui->viewWindow->show();
-        renWin->initPointField(0, 0);
+        //  assign the field name list
+        ui->fieldName->addItems(fields.last()->getFieldNameList());
+        ui->compName->addItems(fields.last()->getCompNameList());
+        ui->innerTool->setCurrentIndex(1);
+        //  assign the field data to the viewport
+        renWin->initPointField(ui->fieldName->currentIndex(),
+                               ui->compName->currentIndex(), FIELD_GENERATE);
         renWin->showModel();
+        isFieldLoad = true;
     });
 
     /*  ************************************************************************
@@ -302,6 +304,21 @@ void pacnano::setupRenderWindow() {
             [&]() { renWin->showFieldGeometry(); });
     connect(ui->actDeformGeo, &QAction::triggered, renWin,
             [&]() { renWin->showFieldGeometry(); });
+    //  switch field and its components
+    connect(ui->fieldName, &QComboBox::currentIndexChanged, this,
+            [&](int index) {
+                if (ui->compName->currentIndex() >= 0 && index >= 0) {
+                    renWin->initPointField(index, ui->compName->currentIndex(),
+                                           FIELD_UPDATE);
+                }
+            });
+    connect(ui->compName, &QComboBox::currentIndexChanged, this,
+            [&](int index) {
+                if (ui->fieldName->currentIndex() >= 0 && index >= 0) {
+                    renWin->initPointField(ui->fieldName->currentIndex(), index,
+                                           FIELD_UPDATE);
+                }
+            });
 
     /*  ************************************************************************
      *  connect to selection  */
@@ -313,13 +330,13 @@ void pacnano::setupRenderWindow() {
     /*  ************************************************************************
      *  hide selection  */
     connect(ui->btnHideCellCancel, &QPushButton::clicked, ui->innerTool, [&]() {
-        ui->innerTool->setCurrentIndex(0);
+        ui->innerTool->setCurrentIndex(isInPostMode && isFieldLoad ? 1 : 0);
         renWin->turnOffPickMode();
         ui->actExtractSelect->setDisabled(false);
     });
     connect(ui->btnHideCellOk, &QPushButton::clicked, ui->innerTool, [&]() {
         renWin->handleCellPick(USE_HIDE_MODE);
-        ui->innerTool->setCurrentIndex(0);
+        ui->innerTool->setCurrentIndex(isInPostMode && isFieldLoad ? 1 : 0);
         ui->actExtractSelect->setDisabled(false);
     });
     connect(ui->actHideSelect, &QAction::triggered, renWin, [&]() {
@@ -347,15 +364,15 @@ void pacnano::setupRenderWindow() {
 
     /*  ************************************************************************
      *  extract selection   */
-    connect(ui->btnExtractCellCancel, &QPushButton::clicked, ui->innerTool,
-            [&]() {
-                ui->innerTool->setCurrentIndex(0);
-                renWin->turnOffPickMode();
-                ui->actHideSelect->setDisabled(false);
-            });
+    connect(
+        ui->btnExtractCellCancel, &QPushButton::clicked, ui->innerTool, [&]() {
+            ui->innerTool->setCurrentIndex(isInPostMode && isFieldLoad ? 1 : 0);
+            renWin->turnOffPickMode();
+            ui->actHideSelect->setDisabled(false);
+        });
     connect(ui->btnExtractCellOk, &QPushButton::clicked, ui->innerTool, [&]() {
         renWin->handleCellPick(USE_EXTRACT_MODE);
-        ui->innerTool->setCurrentIndex(0);
+        ui->innerTool->setCurrentIndex(isInPostMode && isFieldLoad ? 1 : 0);
         ui->actHideSelect->setDisabled(false);
     });
     connect(ui->actExtractSelect, &QAction::triggered, renWin, [&]() {

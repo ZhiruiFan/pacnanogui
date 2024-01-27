@@ -16,6 +16,8 @@
 
 #include "field.h"
 
+#include "prenano.h"
+
 /*  ############################################################################
  *  CLASS Field: the class to define the filed that will have a interaction with
  *      the Viewer object. It includes the nodes, elements, vector field (
@@ -33,10 +35,17 @@ Field::Field(QString& _name) {
     reader->Update();
 
     /*  read the field data  */
-    ugrid     = reader->GetOutput();
-    portAll   = reader->GetOutputPort();
-    pointData = ugrid->GetPointData();
-    cellData  = ugrid->GetCellData();
+    ugridAll = reader->GetOutput();
+    portAll  = reader->GetOutputPort();
+
+    /*  get the field data  */
+    pointData     = ugridAll->GetPointData();
+    cellData      = ugridAll->GetCellData();
+    numPointField = pointData->GetNumberOfArrays();
+    numCellField  = cellData->GetNumberOfArrays();
+    //  determine the field name list  */
+    assignFieldNameList();
+    initializePointData();
 
     /*  cell picking  */
     isPicked  = false;
@@ -49,24 +58,23 @@ Field::Field(QString& _name) {
 
     /*  create the warpper object  */
     warp = vtkWarpVector::New();
-    warp->SetInputData(ugrid);
+    warp->SetInputData(ugridAll);
 
     /*  create the threshold  */
-    denFilter  = vtkThreshold::New();
-    pickFilter = vtkThreshold::New();
-
-    /*  coutour filter  */
+    denFilter     = vtkThreshold::New();
+    pickFilter    = vtkThreshold::New();
     contourFilter = vtkContourFilter::New();
-
-    /*  transfer object  */
-    cleanFilter = vtkCleanUnstructuredGrid::New();
+    cleanFilter   = vtkCleanUnstructuredGrid::New();
 
     /*  initialize the anchor  */
     limitType  = 0;
     warpScale  = 0.0;
     lowerLimit = 0.0;
     upperLimit = 1.0;
+
+    /*  initialize the anchor  */
     checkAnchor();
+    updateAnchor();
 }
 
 /*  ============================================================================
@@ -78,7 +86,7 @@ Field::~Field() {
     cellData->Delete();
     pointData->Delete();
     warp->Delete();
-    ugrid->Delete();
+    ugridAll->Delete();
     reader->Delete();
 
     /*  assign the variable to null  */
@@ -86,11 +94,146 @@ Field::~Field() {
     portCur   = nullptr;
     cellData  = nullptr;
     pointData = nullptr;
-    ugrid     = nullptr;
+    ugridAll  = nullptr;
     reader    = nullptr;
 }
 
+/*  ============================================================================
+ *  getPathName: get the full path name of the field varaible
+ *  @return  the path of the current model  */
+QString& Field::getPathName() { return name; }
+
+/*  getInputPort: get the initial port, i.e., the input port of the field
+ *  variables
+ *  @return  the initial port of the field data  */
+vtkAlgorithmOutput* Field::getInputPort() { return reader->GetOutputPort(); }
+
+/*  getInputData: get the initial unstructured grid of the field
+ *  @return  the initial ugrid  */
+vtkUnstructuredGrid* Field::getInputData() { return reader->GetOutput(); }
+
 /*  ############################################################################
+ *  initliztePointData: initialize the point data in the field  */
+void Field::initializePointData() {
+    /*  define the temporary variables  */
+    vtkDataArray* dtOld;     // the old data
+    vtkDoubleArray* dtCur;   // the extracted data
+    std::stringstream name;  // name of the field components
+    double x, y, z;          // variable to store the value of components
+
+    /*  extract the components in the field  */
+    //  loop over point data
+    for (vtkIdType i = 0; i < numPointField; ++i) {
+        /*  get the current point data  */
+        dtOld = pointData->GetArray(i);
+        /*  extract the components  */
+        //  loop over components
+        for (vtkIdType j = 0; j < dtOld->GetNumberOfComponents(); ++j) {
+            //  initialize the temporary variable
+            dtCur = vtkDoubleArray::New();
+            dtCur->SetNumberOfComponents(1);
+            //  extract the sub components
+            for (vtkIdType k = 0; k < dtOld->GetNumberOfTuples(); ++k) {
+                dtCur->InsertNextValue(dtOld->GetTuple(k)[j]);
+            }
+            //  determine the name of the components
+            name.str("");
+            name << fieldNameList[i].toStdString() << ":"
+                 << compNameList[j].toStdString();
+            std::string arrayName;
+            arrayName.assign(name.str().data());
+            dtCur->SetName(name.str().data());
+            pointData->AddArray(dtCur);
+            //  release the temporary variable
+            dtCur->Delete();
+        }
+        /*  assign the amplitude of current field  */
+        //  initialize the temporary variable
+        dtCur = vtkDoubleArray::New();
+        dtCur->SetNumberOfComponents(1);
+        //  calcualte the amplitude
+        for (vtkIdType j = 0; j < dtOld->GetNumberOfTuples(); ++j) {
+            x = dtOld->GetTuple(j)[0];
+            y = dtOld->GetTuple(j)[1];
+            z = dtOld->GetTuple(j)[2];
+            dtCur->InsertNextValue(sqrt(x * x + y * y + z * z));
+        }
+        //  determine the name of the components
+        name.clear();
+        name.str("");
+        name << fieldNameList[i].toStdString() << ":"
+             << compNameList[3].toStdString();
+        dtCur->SetName(name.str().c_str());
+        pointData->AddArray(dtCur);
+        //  release the temporary variable
+        dtCur->Delete();
+
+        /*  remove the unused point data  */
+        if (fieldNameList[i].toStdString() !=
+            fieldNameList[idxU].toStdString()) {
+            pointData->RemoveArray(fieldNameList[i].toStdString().data());
+        }
+    }
+}
+
+/*  ============================================================================
+ *  getNumberOfPointData: get the number of the point datas in the field
+ *  @return  the number of the point data  */
+int Field::getNumberOfPointData() { return pointData->GetNumberOfArrays(); }
+
+/* getPointDataArray: get the point data from the field
+ *  @param  name: the name of the point data
+ *  @return  the point data with specified name  */
+vtkDataArray* Field::getPointDataArray(const char* name) {
+    return pointData->GetArray(name);
+}
+
+/*  getPointDataArray: get the array amoung the all point data
+ *  @param  idx: the index amoung the all point data
+ *  @return  the point data with specified index  */
+vtkDataArray* Field::getPointDataArray(const int& idx) {
+    return pointData->GetArray(idx);
+}
+
+/*  getPointDataArrayName: get the name of the point data according to the
+ *  specified index
+ *  @param  idx: the index of the point data
+ *  @return  the name of the point data array  */
+const char* Field::getPointDataArrayName(const int& idx) {
+    return pointData->GetArrayName(idx);
+}
+
+/*  getNumberOfCellData: get the number of the cell datas in the field
+ *  @the number of cell data  */
+int Field::getNumberOfCellData() { return cellData->GetNumberOfArrays(); }
+
+/*  addPointData: add a new point data to the field
+ *  @param  pointDataArray: the array will be added to the field  */
+void Field::addPointData(vtkDoubleArray* data) {
+    //  get the data name
+    pointData = reader->GetOutput()->GetPointData();
+    pointData->SetScalars(data);
+    //  update the anchor
+    updateAnchor();
+}
+
+/*  ############################################################################
+ *  setWarpScale: set the coefficient of the warping scale
+ *  @param  scale: the warping scale  */
+void Field::setWarpScale(const double& scale) { warpScale = scale; }
+
+/*  setLimitType: set the type of the threshold limination
+ *  @param  type: the type of the limit
+ *  @param  lower: the lower limit value
+ *  @param  upper: the upper limit value  */
+void Field::setLimits(const int& type, const double& lower,
+                      const double& upper) {
+    limitType  = type;
+    lowerLimit = lower;
+    upperLimit = upper;
+}
+
+/*  ============================================================================
  *  checkAnchor: check the anchor filed variable is included or not?
  *  @return  the checked status, ture for sucessed, otherwise failed  */
 bool Field::checkAnchor() {
@@ -98,7 +241,6 @@ bool Field::checkAnchor() {
     int idx = 0;
 
     /*  extract the anchor of the warpping  */
-    numPointField = pointData->GetNumberOfArrays();
     for (idx = 0; idx < numPointField; ++idx) {
         if (std::strcmp(pointData->GetArrayName(idx), "U") == 0) {
             idxU = idx;
@@ -109,7 +251,6 @@ bool Field::checkAnchor() {
     if (idxU >= numPointField) return false;
 
     /*  extract the anchor of the threshold  */
-    numCellField = cellData->GetNumberOfArrays();
     for (idx = 0; idx < numCellField; ++idx) {
         if (std::strcmp(cellData->GetArrayName(idx), "Var-0") == 0) {
             idxDen = idx;
@@ -130,7 +271,7 @@ void Field::updateAnchor() {
     warp->SetInputArrayToProcess(0, 0, 0,
                                  vtkDataObject::FIELD_ASSOCIATION_POINTS,
                                  pointData->GetArray(idxU)->GetName());
-    warp->SetInputConnection(reader->GetOutputPort());
+    warp->SetInputData(ugridAll);
     warp->SetScaleFactor(warpScale);
     warp->Update();
 
@@ -152,6 +293,7 @@ void Field::updateAnchor() {
     }
 
     /*  update the threshold  */
+    denFilter->RemoveAllInputConnections(0);
     denFilter->SetInputConnection(warp->GetOutputPort());
     denFilter->SetInputData(warp->GetOutput());
     denFilter->SetInputArrayToProcess(0, 0, 0,
@@ -166,80 +308,72 @@ void Field::updateAnchor() {
     portCur  = denFilter->GetOutputPort();
 }
 
-/*  ############################################################################
- *  setWarpScale: set the coefficient of the warping scale
- *  @param  scale: the warping scale  */
-void Field::setWarpScale(const double& scale) { warpScale = scale; }
-
 /*  ============================================================================
- *  setLimitType: set the type of the threshold limination
- *  @param  type: the type of the limit
- *  @param  lower: the lower limit value
- *  @param  upper: the upper limit value  */
-void Field::setLimits(const int& type, const double& lower,
-                      const double& upper) {
-    limitType  = type;
-    lowerLimit = lower;
-    upperLimit = upper;
+ *  getWarpOutputPort: get the output port of the warper
+ *  @return  the data port after warping operation  */
+vtkAlgorithmOutput* Field::getWarpOutputPort() { return warp->GetOutputPort(); }
+
+/*  getWarpOutput: get the output data of the warper
+ *  @return  the data port after warping operation  */
+vtkPointSet* Field::getWarpOutput() { return warp->GetOutput(); }
+
+/*  getThresholdOutputPort: get the output port of the threshold
+ *  @return  the data port after threshold operation  */
+vtkAlgorithmOutput* Field::getThresholdOutputPort() {
+    return denFilter->GetOutputPort();
 }
 
-/*  ============================================================================
- *  getPointDataArray: get the point data from the field
- *  @param  name: the name of the point data
- *  @return  the point data with specified name  */
-vtkDataArray* Field::getPointDataArray(const char* name) {
-    return pointData->GetArray(name);
+/*  getThresholdOutput: get the output ugrid of the threshold
+ *  @return  the data after threshold operation  */
+vtkUnstructuredGrid* Field::getThresholdOutput() {
+    return denFilter->GetOutput();
 }
 
-/*  ============================================================================
- *  getPointDataArray: get the array amoung the all point data
- *  @param  idx: the index amoung the all point data
- *  @return  the point data with specified index  */
-vtkDataArray* Field::getPointDataArray(const int& idx) {
-    return pointData->GetArray(idx);
-}
-
-/*  ============================================================================
- *  getPointDataArrayName: get the name of the point data according to the
- *  specified index
- *  @param  idx: the index of the point data
- *  @return  the name of the point data array  */
-const char* Field::getPointDataArrayName(const int& idx) {
-    return pointData->GetArrayName(idx);
-}
-
-/*  ########################################################################
- *  addPointData: add a new point data to the field
- *  @param  pointDataArray: the array will be added to the field  */
-void Field::addPointData(vtkDoubleArray* data) {
-    pointData = reader->GetOutput()->GetPointData();
-    pointData->SetScalars(data);
+/*  getThresholdRange: get the range of the point after density filter
+ *  operation
+ *  @return  the range of the point data  */
+double* Field::getThresholdRange(char* name) {
+    return denFilter->GetOutput()->GetPointData()->GetArray(name)->GetRange();
 }
 
 /*  ############################################################################
  *  performCellPick: do the cell picking operation
+ *  @param  operateType: the source type of the field data
  *  @param  isModelMode: picking for model or field?
  *  @param  isHided: hide cells or extract cells
  *  @param  cellIdsCur: the selected cells that will be used for picking */
-void Field::performCellPick(const bool isModelMode, const bool isHideMode,
-                            vtkIdTypeArray* cellIdsCur) {
+void Field::performCellPick(const int operateType, const bool isModelMode,
+                            const bool isHideMode, vtkIdTypeArray* cellIdsCur) {
     /*  update the picking flag  */
     isPicked = true;
 
     /*  handling for the model or field mode  */
     if (isModelMode) {
         //  using the model mode
-        ugridCur  = ugrid;
+        ugridCur  = ugridAll;
         portCur   = portAll;
         pickArray = cellData->GetArray("PickCells");
 
     } else {
         /*  get the array of the picked array */
-        ugridCur  = denFilter->GetOutput();
-        portCur   = denFilter->GetOutputPort();
-        pickArray = denFilter->GetOutput()
-                        ->GetCellData()  //
-                        ->GetArray("PickCells");
+        switch (operateType) {
+            //  original field
+            case PRENANO::USE_ORIGIN_FIELD:
+                ugridCur  = denFilter->GetOutput();
+                portCur   = denFilter->GetOutputPort();
+                pickArray = denFilter->GetOutput()
+                                ->GetCellData()  //
+                                ->GetArray("PickCells");
+                break;
+            //  mirrored field
+            case PRENANO::USE_MIRROR_FIELD:
+                ugridCur  = cleanFilter->GetOutput();
+                portCur   = cleanFilter->GetOutputPort();
+                pickArray = cleanFilter->GetOutput()
+                                ->GetCellData()  //
+                                ->GetArray("PickCells");
+                break;
+        }
     }
 
     /*  handling for selection mode  */
@@ -269,24 +403,43 @@ void Field::performCellPick(const bool isModelMode, const bool isHideMode,
 }
 
 /*  ============================================================================
- *  resetCellPick: reset the cell picking  */
-void Field::resetCellPick() {
+ *  resetCellPick: reset the cell picking according to the operate type
+ *  @param  operateType: the type of the operation  */
+void Field::resetCellPick(const int operateType) {
     /*  reset the pick array  */
-    pickArray = cellData->GetArray("PickCells");
-    pickArray->Fill(1.0);
 
     /*  update the port and data  */
-    ugridCur  = reader->GetOutput();
-    portCur   = reader->GetOutputPort();
-    pointData = ugrid->GetPointData();
-    cellData  = ugrid->GetCellData();
+    ugridCur = reader->GetOutput();
+    portCur  = reader->GetOutputPort();
 
-    /*  update the anchor  */
-    updateAnchor();
+    /*  update the filter  */
+    switch (operateType) {
+        case PRENANO::USE_ORIGIN_FIELD:
+            pickArray = denFilter->GetOutput()
+                            ->GetCellData()  //
+                            ->GetArray("PickCells");
+            break;
+        case PRENANO::USE_MIRROR_FIELD:
+            pickArray = cleanFilter->GetOutput()
+                            ->GetCellData()  //
+                            ->GetArray("PickCells");
+            break;
+    }
+    pickArray->Fill(1.0);
 
     /*  update the flag  */
     isPicked = false;
 }
+
+/*  getPickOutputPort: get the output port after picking operation
+ *  @return  the port of the pick filter  */
+vtkAlgorithmOutput* Field::getPickOutputPort() {
+    return pickFilter->GetOutputPort();
+}
+
+/*  getPickOutput: get the output data after picking operation
+ *  @return  the data after the pick filter  */
+vtkUnstructuredGrid* Field::getPickOutput() { return pickFilter->GetOutput(); }
 
 /*  ############################################################################
  *  mirror: mirror the unstructured grid according to the specifed
@@ -343,8 +496,7 @@ void Field::mirror(const bool isUseAll, const bool* planes,
     transformFilter->Delete();
 }
 
-/*  ============================================================================
- *  getMirrorOutput: get the ugrid after mirror operation
+/*  getMirrorOutput: get the ugrid after mirror operation
  *  @return  the unstrictured grid after mirror operation  */
 vtkUnstructuredGrid* Field::getMirrorOutput() {
     return cleanFilter->GetOutput();
@@ -356,52 +508,6 @@ vtkAlgorithmOutput* Field::getMirrorOutputPort() {
     return cleanFilter->GetOutputPort();
 }
 
-/*  ########################################################################
- *  getPathName: get the full path name of the field varaible  */
-QString& Field::getPathName() { return name; }
-
-/*  ############################################################################
- *  getInputPort: get the initial port, i.e., the input port of the field
- *  variables  */
-vtkAlgorithmOutput* Field::getInputPort() { return portAll; }
-
-/*  getInputData: get the initial unstructured grid of the field
- *  @return  the ugrid  */
-vtkUnstructuredGrid* Field::getInputData() { return reader->GetOutput(); }
-
-/*  ============================================================================
- *  getWarpOutputPort: get the output port of the warper
- *  @return  the data port after warping operation  */
-vtkAlgorithmOutput* Field::getWarpOutputPort() { return warp->GetOutputPort(); }
-
-/*  getWarpOutput: get the output data of the warper
- *  @return  the data port after warping operation  */
-vtkPointSet* Field::getWarpOutput() { return warp->GetOutput(); }
-
-/*  ============================================================================
- *  getThresholdOutputPort: get the output port of the threshold
- *  @return  the data port after threshold operation  */
-vtkAlgorithmOutput* Field::getThresholdOutputPort() {
-    return denFilter->GetOutputPort();
-}
-
-/*  getThresholdOutput: get the output ugrid of the threshold
- *  @return  the data after threshold operation  */
-vtkUnstructuredGrid* Field::getThresholdOutput() {
-    return denFilter->GetOutput();
-}
-
-/*  ============================================================================
- *  getPickOutputPort: get the output port after picking operation
- *  @return  the port of the pick filter  */
-vtkAlgorithmOutput* Field::getPickOutputPort() {
-    return pickFilter->GetOutputPort();
-}
-
-/*  getPickOutput: get the output data after picking operation
- *  @return  the data after the pick filter  */
-vtkUnstructuredGrid* Field::getPickOutput() { return pickFilter->GetOutput(); }
-
 /*  ============================================================================
  *  getCellDataArray: get the array amoung the all cell data
  *  @param  idx: the index of the cell data array  */
@@ -409,13 +515,24 @@ vtkDataArray* Field::getCellDataArray(const int& idx) {
     return cellData->GetArray(idx);
 }
 
-/*  ============================================================================
- *  getContourOutput: get the output data of the contour
- *  @return  the ouput data after contour filter  */
-vtkPolyData* Field::getContourOutput() { return contourFilter->GetOutput(); }
+/*  ############################################################################
+ *  assignFieldNameList: determine the list of the conbo box in viewerport */
+void Field::assignFieldNameList() {
+    /*  get the list of the point data  */
+    fieldName.clear();
+    for (int i = 0; i < pointData->GetNumberOfArrays(); ++i) {
+        fieldNameList << pointData->GetArrayName(i);
+    }
 
-/*  getContourOutputPort: get the port with respect to contour filter
- *  @return  the port after contour filter  */
-vtkAlgorithmOutput* Field::getContourOutputPort() {
-    return contourFilter->GetOutputPort();
+    /*  get the list of the cell data  */
+    for (int i = 0; i < cellData->GetNumberOfArrays(); ++i) {
+        fieldNameList << cellData->GetArrayName(i);
+    }
+
+    /*  determine the component name  */
+    compName.clear();
+    compNameList << "X"
+                 << "Y"
+                 << "Z"
+                 << "Magnitude";
 }

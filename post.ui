@@ -7,19 +7,19 @@
     <x>0</x>
     <y>0</y>
     <width>368</width>
-    <height>418</height>
+    <height>442</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>368</width>
-    <height>418</height>
+    <height>442</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>368</width>
-    <height>418</height>
+    <height>442</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -261,6 +261,13 @@
        </layout>
       </item>
      </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="label_3">
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;Note that: &lt;/span&gt;model will be reset after settings take affect.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
     </widget>
    </item>
    <item>
