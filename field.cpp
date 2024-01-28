@@ -179,7 +179,7 @@ void Field::initializePointData() {
 /*  ============================================================================
  *  getNumberOfPointData: get the number of the point datas in the field
  *  @return  the number of the point data  */
-int Field::getNumberOfPointData() { return pointData->GetNumberOfArrays(); }
+int Field::getNumberOfPointData() { return numPointField; }
 
 /* getPointDataArray: get the point data from the field
  *  @param  name: the name of the point data
@@ -205,7 +205,7 @@ const char* Field::getPointDataArrayName(const int& idx) {
 
 /*  getNumberOfCellData: get the number of the cell datas in the field
  *  @the number of cell data  */
-int Field::getNumberOfCellData() { return cellData->GetNumberOfArrays(); }
+int Field::getNumberOfCellData() { return numCellField; }
 
 /*  addPointData: add a new point data to the field
  *  @param  pointDataArray: the array will be added to the field  */
@@ -329,11 +329,18 @@ vtkUnstructuredGrid* Field::getThresholdOutput() {
     return denFilter->GetOutput();
 }
 
-/*  getThresholdRange: get the range of the point after density filter
+/*  getPointDataRange: get the range of the point after density filter
  *  operation
  *  @return  the range of the point data  */
-double* Field::getThresholdRange(char* name) {
+double* Field::getPointDataRange(char* name) {
     return denFilter->GetOutput()->GetPointData()->GetArray(name)->GetRange();
+}
+
+/*  getCellDataRange: get the range of the point after density filter
+ *  operation
+ *  @return  the range of the cell data  */
+double* Field::getCellDataRange(char* name) {
+    return denFilter->GetOutput()->GetCellData()->GetArray(name)->GetRange();
 }
 
 /*  ############################################################################

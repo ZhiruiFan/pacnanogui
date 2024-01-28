@@ -206,9 +206,8 @@ public:
 
     /*  showCellField: display the information with respect to the elements,
      *  it includes the stress components, design variables in topology
-     *  optimization and so on
-     *  @param  idx: the index of the component in the data set  */
-    void showCellField(const int& idx);
+     *  optimization and so on  */
+    void showCellField();
 
 private:
     /*  ########################################################################

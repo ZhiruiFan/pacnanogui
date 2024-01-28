@@ -172,10 +172,15 @@ public:
      *  @return  the data after threshold operation  */
     vtkUnstructuredGrid* getThresholdOutput();
 
-    /*  getThresholdRange: get the range of the point after density filter
+    /*  getPointDataRange: get the range of the point after density filter
      *  operation
      *  @return  the range of the point data  */
-    double* getThresholdRange(char* name);
+    double* getPointDataRange(char* name);
+
+    /*  getCellDataRange: get the range of the cell data after density filter
+     *  operation
+     *  @return  the range of the cell data  */
+    double* getCellDataRange(char* name);
 
 public:
     /*  mirror: mirror the unstructured grid according to the specifed

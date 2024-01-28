@@ -299,7 +299,6 @@ void Viewer::showMesh() {
 void Viewer::initPointField(const int& idx, const int& comp, const bool& mode) {
     /*  update the flags  */
     isFieldLoaded = true;
-
     /*  assign the recorder  */
     recorder[1] = idx;
     recorder[2] = comp;
@@ -307,21 +306,13 @@ void Viewer::initPointField(const int& idx, const int& comp, const bool& mode) {
     /*  regenerate the field variable if needed  */
     if (mode == FIELD_GENERATE) {
         //  update the field variables
+        field->resetCellPick(operateType);
         field->updateAnchor();
         ugridFieldCur = field->getThresholdOutput();
         portFieldCur  = field->getThresholdOutputPort();
         //  reset the viewer port
         render->ResetCamera();
     }
-
-    /*  Create the LOOKUP table  */
-    std::stringstream name;
-    name << field->getFieldName(idx) << ":" << field->getCompName(comp);
-    std::string arrayName;
-    arrayName.assign(name.str());
-    lut->SetHueRange(0.667, 0.0);
-    lut->SetTableRange(field->getThresholdRange(name.str().data()));
-    lut->Build();
 
     /*  update the viewer port  */
     update();
@@ -337,19 +328,34 @@ void Viewer::showColorField() {
     /*  check the if the model is loaded  */
     if (isFieldLoaded) {
         /*  update the model or field flag  */
-        viewMode = USE_FIELD_MODE;
-
-        /*  assign the recorder */
         recorder[0] = 1;
+        viewMode    = USE_FIELD_MODE;
+
+        /*  define temporary variables */
+        std::stringstream name;
+        double* range;
 
         /*  get the field index and its component  */
         int index = recorder[1];
         int comp  = recorder[2];
 
-        /*  get the name of the field  */
-        std::stringstream name;
-        name << field->getFieldName(index) << ":" << field->getCompName(comp);
-        std::string fieldName = name.str();
+        /*  setting for point data or cell data*/
+        if (index >= field->getNumberOfPointData()) {
+            /*  get the name of the field  */
+            name << field->getFieldName(index);
+            /*  get the range  */
+            range = field->getCellDataRange(name.str().data());
+            //  the type of the field data in dataset mapper
+            dtMap->SetScalarModeToUseCellFieldData();
+        } else {
+            /*  get the name of the field  */
+            name << field->getFieldName(index) << ":"
+                 << field->getCompName(comp);
+            /*  get the range  */
+            range = field->getPointDataRange(name.str().data());
+            //  the type of the field data in dataset mapper
+            dtMap->SetScalarModeToUsePointFieldData();
+        }
 
         /*  Create the LOOKUP table  */
         //  update the range of field data
@@ -358,8 +364,12 @@ void Viewer::showColorField() {
             lut->SetTableRange(ugridFieldCur->GetPointData()
                                    ->GetArray(name.str().c_str())
                                    ->GetRange());
+        } else {
+            /*  Create the LOOKUP table  */
+            lut->SetTableRange(range);
         }
         //  update the lookup table
+        lut->SetHueRange(0.667, 0.0);
         lut->Build();
 
         /*  configure the scalar bar  */
@@ -376,7 +386,6 @@ void Viewer::showColorField() {
         /*  set the anchor of the warpper  */
         dtMap->SetLookupTable(lut);
         dtMap->ScalarVisibilityOn();
-        dtMap->SetScalarModeToUsePointFieldData();
         dtMap->SelectColorArray(name.str().c_str());
         dtMap->SetScalarRange(lut->GetRange());
 
@@ -395,43 +404,67 @@ void Viewer::showArrowField() {
     /*  check the field is loaded or not  */
     if (isFieldLoaded) {
         /*  update the model or field flag  */
-        viewMode = USE_FIELD_MODE;
-
-        /*  assign the recorder */
         recorder[0] = 2;
+        viewMode    = USE_FIELD_MODE;
+
+        /*  define temporary variables */
+        std::stringstream name;
+        double* range;
 
         /*  get the field index and its component  */
         int index = recorder[1];
         int comp  = recorder[2];
 
-        /*  get the name of the field  */
-        std::stringstream name;
-        name << field->getPointDataArrayName(index) << ":" << compName[comp];
+        /*  setting for point data or cell data*/
+        if (index >= field->getNumberOfPointData()) {
+            /*  get the name of the field  */
+            name << field->getFieldName(index);
+            /*  get the range  */
+            range = field->getCellDataRange(name.str().data());
+            //  the type of the field data in dataset mapper
+            gly->SetInputArrayToProcess(0, 0, 0,
+                                        vtkDataObject::FIELD_ASSOCIATION_CELLS,
+                                        name.str().data());
+            polyMapper->SetScalarModeToUseCellFieldData();
+        } else {
+            //  get the name of the field
+            name << field->getFieldName(index) << ":"
+                 << field->getCompName(comp);
+            //  get the range
+            range = field->getPointDataRange(name.str().data());
+            //  the type of the field data in dataset mapper
+            gly->SetInputArrayToProcess(0, 0, 0,
+                                        vtkDataObject::FIELD_ASSOCIATION_POINTS,
+                                        name.str().data());
+            polyMapper->SetScalarModeToUsePointFieldData();
+        }
 
         /*  Create the LOOKUP table  */
         //  update the range of field data
         if (isAutoLegend) {
-            lut->SetNumberOfTableValues(numIntervals);
             lut->SetTableRange(ugridFieldCur->GetPointData()
                                    ->GetArray(name.str().c_str())
                                    ->GetRange());
+        } else {
+            /*  Create the LOOKUP table  */
+            lut->SetTableRange(range);
         }
         //  update the lookup table
+        lut->SetNumberOfTableValues(numIntervals);
+        lut->SetHueRange(0.667, 0.0);
         lut->Build();
 
-        /*  setup the mapper  */
+        /*  setup the poly data  */
         gly->SetInputConnection(portFieldCur);
         gly->SetSourceConnection(arrow->GetOutputPort());
         gly->SetScaleFactor(100.0);
         gly->SetVectorModeToUseVector();
-        gly->SetInputArrayToProcess(0, 0, 0,
-                                    vtkDataObject::FIELD_ASSOCIATION_POINTS,
-                                    field->getPointDataArrayName(index));
+
+        /*  setup the mapper  */
         polyMapper->RemoveAllInputConnections(0);
         polyMapper->AddInputConnection(0, gly->GetOutputPort());
         polyMapper->SetLookupTable(lut);
         polyMapper->ScalarVisibilityOn();
-        polyMapper->SetScalarModeToUsePointFieldData();
         polyMapper->SelectColorArray(name.str().c_str());
         polyMapper->SetScalarRange(lut->GetRange());
         actor->SetMapper(polyMapper);
@@ -506,13 +539,6 @@ void Viewer::initMirrorField() {
         update();
     }
 }
-
-/*  ############################################################################
- *  showCellField: display the information with respect to the elements,
- *  it includes the stress components, design variables in topology
- *  optimization and so on
- *  @param  idx: the index of the component in the data set  */
-void Viewer::showCellField(const int& idx) {}
 
 /*  ############################################################################
  *  pickCells: pick up the cells in the viewerport using the mouse box
