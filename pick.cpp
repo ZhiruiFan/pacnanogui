@@ -59,52 +59,23 @@ Pick::Pick() : vtkInteractorStyleRubberBandPick() {
     cellIds     = vtkIdTypeArray::New();
 };
 
-/*  ############################################################################
- *  setField: assign the poly data to the current object
- *  @param  input: the field that will be operated  */
-void Pick::setField(Field* input) {
-    /*  assign the filed variables  */
-    field = input;
-
-    /*  initialize the id filter  */
-    idFilter->SetInputData(field->getInputData());
-    idFilter->SetCellIdsArrayName("All_cells");
-    idFilter->SetPointIdsArrayName("All_nodes");
-    idFilter->Update();
-
-    /*  initialize the cell locator  */
-    locator->SetDataSet(idFilter->GetOutput());
-    locator->BuildLocator();
-
-    /*  set the input of the cell extractor  */
-    extractor->SetInputConnection(0, idFilter->GetOutputPort());
-}
-
 /*  ============================================================================
  *  setPolyData: assign the poly data to the current object
  *  @param  input: the unstructured grid be operated  */
-void Pick::setInputData(vtkUnstructuredGrid* input) {
-    /*  set the input of the geometry extractor  */
-    extractGeo->SetInputData(input);
+// void Pick::setInputData(vtkUnstructuredGrid* input) {
+//     /*  set the input of the geometry extractor  */
+//     extractGeo->SetInputData(input);
 
-    /* reset the id array of selected cells  */
-    cellIds->Initialize();
-    cellExtracted->Initialize();
-}
+//     /* reset the id array of selected cells  */
+//     cellIds->Initialize();
+//     cellExtracted->Initialize();
+// }
 
-void Pick::setInputData(vtkAlgorithmOutput* port) {
-    /* reset the id array of selected cells  */
-    cellIds->Initialize();
-    cellExtracted->Initialize();
-
-    /*  set the input of the cell extractor  */
-    extractor->SetInputConnection(0, idFilter->GetOutputPort());
-    extractGeo->SetInputConnection(port);
-}
-
-void Pick::setSourcePort(vtkAlgorithmOutput* port) {
+void Pick::setInputData(vtkAlgorithmOutput* portOrig,
+                        vtkAlgorithmOutput* portCur,
+                        vtkUnstructuredGrid* dataCur) {
     /*  initialize the id filter  */
-    idFilter->SetInputConnection(port);
+    idFilter->SetInputConnection(portOrig);
     idFilter->SetCellIdsArrayName("All_cells");
     idFilter->SetPointIdsArrayName("All_nodes");
     idFilter->Update();
@@ -113,9 +84,30 @@ void Pick::setSourcePort(vtkAlgorithmOutput* port) {
     locator->SetDataSet(idFilter->GetOutput());
     locator->BuildLocator();
 
+    /* reset the id array of selected cells  */
+    cellIds->Initialize();
+    cellExtracted->Initialize();
+
     /*  set the input of the cell extractor  */
     extractor->SetInputConnection(0, idFilter->GetOutputPort());
+    extractGeo->SetInputConnection(portCur);
+    extractGeo->SetInputData(dataCur);
 }
+
+// void Pick::setSourcePort(vtkAlgorithmOutput* port) {
+//     /*  initialize the id filter  */
+//     idFilter->SetInputConnection(port);
+//     idFilter->SetCellIdsArrayName("All_cells");
+//     idFilter->SetPointIdsArrayName("All_nodes");
+//     idFilter->Update();
+
+//     /*  initialize the cell locator  */
+//     locator->SetDataSet(idFilter->GetOutput());
+//     locator->BuildLocator();
+
+//     /*  set the input of the cell extractor  */
+//     extractor->SetInputConnection(0, idFilter->GetOutputPort());
+// }
 
 /*  ============================================================================
  *  setRenderInfo: set the render window and renderer */

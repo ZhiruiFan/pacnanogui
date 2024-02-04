@@ -52,21 +52,21 @@
  *      cliking/single selection is defined.  */
 class Pick : public vtkInteractorStyleRubberBandPick {
 private:
-    bool mode;                           // node or cell mode
-    bool isActivated;                    // status flag
+    bool mode;                         // node or cell mode
+    bool isActivated;                  // status flag
 
-    vtkRenderer* ren;                    // renderer of the window
-    vtkNamedColors* colors;              // buid-in color
+    vtkRenderer* ren;                  // renderer of the window
+    vtkNamedColors* colors;            // buid-in color
 
-    vtkActor* selectActor;               // actor for selection
-    vtkDataSetMapper* selectMap;         // mappler of data selection
+    vtkActor* selectActor;             // actor for selection
+    vtkDataSetMapper* selectMap;       // mappler of data selection
     vtkPlanes* planes;
-    vtkImplicitBoolean* frustum;         // viewerport frustum
+    vtkImplicitBoolean* frustum;       // viewerport frustum
 
-    vtkAppendFilter* regionFilter;       // append the region selection
+    vtkAppendFilter* regionFilter;     // append the region selection
 
-    vtkVertexGlyphFilter* nodeFilter;    // nodal filter
-    Field* field;                        // current operated data
+    vtkVertexGlyphFilter* nodeFilter;  // nodal filter
+    // Field* field;                        // current operated data
 
     vtkCellPicker* cellPicker;           // cell picker
     vtkAreaPicker* areaPicker;           // area picker
@@ -96,15 +96,12 @@ public:
     /*  setPointSelectMode: set the selection model to points  */
     void setPointSelectMode() { mode = false; }
 
-    /*  setField: assign field variables to the current viewer object
-     *  @param  input: the field that will be operated  */
-    void setField(Field* input);
-
     /*  setInputData: assign the unstructured grid data to the current object
      *  @param  input: the unstructured grid be operated  */
-    void setInputData(vtkUnstructuredGrid* input);
-    void setInputData(vtkAlgorithmOutput* port);
-    void setSourcePort(vtkAlgorithmOutput* port);
+    // void setInputData(vtkUnstructuredGrid* input);
+    void setInputData(vtkAlgorithmOutput* portOrig, vtkAlgorithmOutput* portCur,
+                      vtkUnstructuredGrid* dataCur);
+    // void setSourcePort(vtkAlgorithmOutput* port);
 
     /*  setRenderInfo: set the render window and renderer
      *  @param  renderWindow: the window to show the model

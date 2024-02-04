@@ -413,25 +413,24 @@ void Field::performCellPick(const int operateType, const bool isModelMode,
  *  resetCellPick: reset the cell picking according to the operate type
  *  @param  operateType: the type of the operation  */
 void Field::resetCellPick(const int operateType) {
-    /*  reset the pick array  */
-
-    /*  update the port and data  */
-    ugridCur = reader->GetOutput();
-    portCur  = reader->GetOutputPort();
-
     /*  update the filter  */
     switch (operateType) {
         case PRENANO::USE_ORIGIN_FIELD:
+            ugridCur  = denFilter->GetOutput();
+            portCur   = denFilter->GetOutputPort();
             pickArray = denFilter->GetOutput()
                             ->GetCellData()  //
                             ->GetArray("PickCells");
             break;
         case PRENANO::USE_MIRROR_FIELD:
+            ugridCur  = cleanFilter->GetOutput();
+            portCur   = cleanFilter->GetOutputPort();
             pickArray = cleanFilter->GetOutput()
                             ->GetCellData()  //
                             ->GetArray("PickCells");
             break;
     }
+    //  reset the picked array
     pickArray->Fill(1.0);
 
     /*  update the flag  */

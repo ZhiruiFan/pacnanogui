@@ -154,10 +154,11 @@ Viewer::~Viewer() {
 void Viewer::setInputData(Field*& input) {
     /*  set the field variable that will be shown  */
     field = input;
-    pick->setField(input);
+    // pick->setField(input);
 
     /*  copy the current unstructured data for operation  */
     portModelCur  = field->getInputPort();
+    ugridModelCur = field->getInputData();
     portFieldCur  = field->getThresholdOutputPort();
     ugridFieldCur = field->getInputData();
 
@@ -197,6 +198,11 @@ void Viewer::update() {
     }
 }
 
+/*  ============================================================================
+ *  getFieldSwitchStatus: get the status of the field switch
+ *  @return  status: the status of the current field switch  */
+bool* Viewer::getFieldSwtichStatus() { return fieldSwitchStatus; }
+
 /*  ############################################################################
  *  showCompleteModel: reset the unstructured grid data to the original and
  *      show the model as current configuration  */
@@ -205,19 +211,20 @@ void Viewer::showCompleteModel() {
     if (isModelLoaded) {
         /*  reset the unstructured grid to original  */
         field->resetCellPick(operateType);
-        portModelCur  = field->getInputPort();
-        ugridFieldCur = field->getInputData();
+        portModelCur = field->getInputPort();
         /*  update the anchor in field  */
-        field->updateAnchor();
+        // field->updateAnchor();
         /*  update the field data port  */
         switch (operateType) {
             //  use the original field
             case USE_ORIGIN_FIELD:
-                portFieldCur = field->getThresholdOutputPort();
+                portFieldCur  = field->getThresholdOutputPort();
+                ugridFieldCur = field->getInputData();
                 break;
             //  use mirrored field
             case USE_MIRROR_FIELD:
-                portFieldCur = field->getMirrorOutputPort();
+                portFieldCur  = field->getMirrorOutputPort();
+                ugridFieldCur = field->getMirrorOutput();
                 break;
         }
         /*  update the display  */
@@ -258,7 +265,6 @@ void Viewer::showModel() {
         actor->GetProperty()->SetEdgeVisibility(0);
         actor->SetMapper(dtMap);
 
-        /*  show mesh and config camera  */
         /*  reset the camera  */
         if (isInitViewerPort) {
             isInitViewerPort = false;
@@ -268,6 +274,10 @@ void Viewer::showModel() {
 
         /*  update the model loaded flag  */
         isModelLoaded = true;
+
+        /*  update the field switch status  */
+        fieldSwitchStatus[0] = false;
+        fieldSwitchStatus[1] = false;
     }
 }
 
@@ -347,6 +357,9 @@ void Viewer::showColorField() {
             range = field->getCellDataRange(name.str().data());
             //  the type of the field data in dataset mapper
             dtMap->SetScalarModeToUseCellFieldData();
+            //  update the field switch flag
+            fieldSwitchStatus[0] = true;
+            fieldSwitchStatus[1] = false;
         } else {
             /*  get the name of the field  */
             name << field->getFieldName(index) << ":"
@@ -355,21 +368,33 @@ void Viewer::showColorField() {
             range = field->getPointDataRange(name.str().data());
             //  the type of the field data in dataset mapper
             dtMap->SetScalarModeToUsePointFieldData();
+            //  update the field switch flag
+            fieldSwitchStatus[0] = true;
+            fieldSwitchStatus[1] = true;
         }
 
         /*  Create the LOOKUP table  */
         //  update the range of field data
         if (isAutoLegend) {
-            lut->SetNumberOfTableValues(numIntervals);
-            lut->SetTableRange(ugridFieldCur->GetPointData()
-                                   ->GetArray(name.str().c_str())
-                                   ->GetRange());
+            /*  cell field  */
+            if (index >= field->getNumberOfPointData()) {
+                lut->SetTableRange(ugridFieldCur->GetCellData()
+                                       ->GetArray(name.str().c_str())
+                                       ->GetRange());
+            }
+            /*  point field  */
+            else {
+                lut->SetTableRange(ugridFieldCur->GetPointData()
+                                       ->GetArray(name.str().c_str())
+                                       ->GetRange());
+            }
         } else {
             /*  Create the LOOKUP table  */
             lut->SetTableRange(range);
         }
         //  update the lookup table
         lut->SetHueRange(0.667, 0.0);
+        lut->SetNumberOfTableValues(numIntervals);
         lut->Build();
 
         /*  configure the scalar bar  */
@@ -426,6 +451,9 @@ void Viewer::showArrowField() {
                                         vtkDataObject::FIELD_ASSOCIATION_CELLS,
                                         name.str().data());
             polyMapper->SetScalarModeToUseCellFieldData();
+            //  update the field switch flag
+            fieldSwitchStatus[0] = true;
+            fieldSwitchStatus[1] = false;
         } else {
             //  get the name of the field
             name << field->getFieldName(index) << ":"
@@ -437,14 +465,26 @@ void Viewer::showArrowField() {
                                         vtkDataObject::FIELD_ASSOCIATION_POINTS,
                                         name.str().data());
             polyMapper->SetScalarModeToUsePointFieldData();
+            //  update the field switch flag
+            fieldSwitchStatus[0] = true;
+            fieldSwitchStatus[1] = true;
         }
 
         /*  Create the LOOKUP table  */
         //  update the range of field data
         if (isAutoLegend) {
-            lut->SetTableRange(ugridFieldCur->GetPointData()
-                                   ->GetArray(name.str().c_str())
-                                   ->GetRange());
+            /*  cell field data  */
+            if (index >= field->getNumberOfPointData()) {
+                lut->SetTableRange(ugridFieldCur->GetCellData()
+                                       ->GetArray(name.str().c_str())
+                                       ->GetRange());
+            }
+            /*  point field data  */
+            else {
+                lut->SetTableRange(ugridFieldCur->GetPointData()
+                                       ->GetArray(name.str().c_str())
+                                       ->GetRange());
+            }
         } else {
             /*  Create the LOOKUP table  */
             lut->SetTableRange(range);
@@ -512,6 +552,16 @@ void Viewer::showFieldGeometry() {
         actor->GetProperty()->SetColor(colors->GetColor3d("cyan").GetData());
         actor->SetMapper(dtMap);
 
+        /*  reset the camera  */
+        if (isInitViewerPort) {
+            isInitViewerPort = false;
+            render->ResetCamera();
+        }
+
+        /*  update the field switch status  */
+        fieldSwitchStatus[0] = false;
+        fieldSwitchStatus[1] = false;
+
         /*  show mesh and config camera  */
         renWin->Render();
     }
@@ -548,24 +598,27 @@ void Viewer::initMirrorField() {
  *                mode; else element selection mode  */
 void Viewer::activePickMode(const bool& mode) {
     /*  check the model is loaded or not  */
-    if (isModelLoaded) {
+    if (isModelLoaded || isFieldLoaded) {
         /*  create the picker  */
         if (viewMode == USE_MODEL_MODE) {
-            pick->setSourcePort(field->getInputPort());
-            pick->setInputData(portModelCur);
+            // pick->setSourcePort(field->getInputPort());
+            pick->setInputData(field->getInputPort(), portModelCur,
+                               ugridModelCur);
         } else {
             /*  determine the source field for operation  */
             switch (operateType) {
                 //  the initial field source
                 case USE_ORIGIN_FIELD:
-                    pick->setSourcePort(field->getThresholdOutputPort());
+                    pick->setInputData(field->getThresholdOutputPort(),
+                                       portFieldCur, ugridFieldCur);
                     break;
                 //  the mirrored field source
                 case USE_MIRROR_FIELD:
-                    pick->setSourcePort(field->getMirrorOutputPort());
+                    pick->setInputData(field->getMirrorOutputPort(),
+                                       portFieldCur, ugridFieldCur);
                     break;
             }
-            pick->setInputData(portFieldCur);
+            // pick->setInputData(portFieldCur);
         }
         pick->setRenderInfo(render);
 
@@ -592,7 +645,8 @@ void Viewer::handleCellPick(const bool& pickMode) {
         /*  update the current port  */
         field->performCellPick(operateType, viewMode, pickMode, cellIdsCur);
         if (viewMode == USE_MODEL_MODE) {
-            portModelCur = field->getPickOutputPort();
+            portModelCur  = field->getPickOutputPort();
+            ugridModelCur = field->getPickOutput();
         } else {
             portFieldCur  = field->getPickOutputPort();
             ugridFieldCur = field->getPickOutput();

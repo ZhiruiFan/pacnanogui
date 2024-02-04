@@ -78,11 +78,13 @@ void pacnano::setupViewportSwitch() {
     isInPostMode = false;
 
     // Function: change the viewport using ComboBox
-    connect(ui->vpSwtich, &QComboBox::currentIndexChanged, this,
-            [&](int index) {
-                ui->vpToolBar->setCurrentIndex(index);
-                isInPostMode = index == 4 ? true : false;
-            });
+    connect(
+        ui->vpSwtich, &QComboBox::currentIndexChanged, this, [&](int index) {
+            ui->vpToolBar->setCurrentIndex(index);
+            isInPostMode = index == 4 ? true : false;
+            ui->innerTool->setCurrentIndex(index == 4 ? (isFieldLoad ? 1 : 0)
+                                                      : 0);
+        });
 
     //  Function: menu action to show project viewport
     connect(ui->actVpProject, &QAction::triggered, this, [&]() {
@@ -247,8 +249,11 @@ void pacnano::setupRenderWindow() {
         //  assign the field data to the viewport
         renWin->initPointField(ui->fieldName->currentIndex(),
                                ui->compName->currentIndex(), FIELD_GENERATE);
-        renWin->showModel();
-        isFieldLoad = true;
+        renWin->showFieldGeometry();
+        isFieldLoad  = true;
+        bool* status = renWin->getFieldSwtichStatus();
+        ui->fieldName->setEnabled(status[0]);
+        ui->compName->setEnabled(status[1]);
     });
 
     /*  ************************************************************************
@@ -285,31 +290,62 @@ void pacnano::setupRenderWindow() {
     connect(ui->actShowGeom, &QAction::triggered, renWin, [&]() {
         ui->viewWindow->show();
         renWin->showModel();
+        bool* status = renWin->getFieldSwtichStatus();
+        ui->fieldName->setEnabled(status[0]);
+        ui->compName->setEnabled(status[1]);
     });
     //  show mesh
     connect(ui->actShowMesh, &QAction::triggered, renWin,
             [&]() { renWin->showMesh(); });
     //  colored field
-    connect(ui->actColorMap, &QAction::triggered, renWin,
-            [&]() { renWin->showColorField(); });
-    connect(ui->btnColorMap, &QToolButton::clicked, renWin,
-            [&]() { renWin->showColorField(); });
+    connect(ui->actColorMap, &QAction::triggered, renWin, [&]() {
+        renWin->showColorField();
+        bool* status = renWin->getFieldSwtichStatus();
+        ui->fieldName->setEnabled(status[0]);
+        ui->compName->setEnabled(status[1]);
+    });
+    connect(ui->btnColorMap, &QToolButton::clicked, renWin, [&]() {
+        renWin->showColorField();
+        bool* status = renWin->getFieldSwtichStatus();
+        ui->fieldName->setEnabled(status[0]);
+        ui->compName->setEnabled(status[1]);
+    });
     //  arrow map
-    connect(ui->actSymbolMap, &QAction::triggered, renWin,
-            [&]() { renWin->showArrowField(); });
-    connect(ui->btnSymbolMap, &QToolButton::clicked, renWin,
-            [&]() { renWin->showArrowField(); });
+    connect(ui->actSymbolMap, &QAction::triggered, renWin, [&]() {
+        renWin->showArrowField();
+        bool* status = renWin->getFieldSwtichStatus();
+        ui->fieldName->setEnabled(status[0]);
+        ui->compName->setEnabled(status[1]);
+    });
+    connect(ui->btnSymbolMap, &QToolButton::clicked, renWin, [&]() {
+        renWin->showArrowField();
+        bool* status = renWin->getFieldSwtichStatus();
+        ui->fieldName->setEnabled(status[0]);
+        ui->compName->setEnabled(status[1]);
+    });
     //  deformed geometry
-    connect(ui->btnDeformGeo, &QPushButton::clicked, renWin,
-            [&]() { renWin->showFieldGeometry(); });
-    connect(ui->actDeformGeo, &QAction::triggered, renWin,
-            [&]() { renWin->showFieldGeometry(); });
+    connect(ui->btnDeformGeo, &QPushButton::clicked, renWin, [&]() {
+        renWin->showFieldGeometry();
+        bool* status = renWin->getFieldSwtichStatus();
+        ui->fieldName->setEnabled(status[0]);
+        ui->compName->setEnabled(status[1]);
+    });
+    connect(ui->actDeformGeo, &QAction::triggered, renWin, [&]() {
+        renWin->showFieldGeometry();
+        bool* status = renWin->getFieldSwtichStatus();
+        ui->fieldName->setEnabled(status[0]);
+        ui->compName->setEnabled(status[1]);
+    });
     //  switch field and its components
     connect(ui->fieldName, &QComboBox::currentIndexChanged, this,
             [&](int index) {
                 if (ui->compName->currentIndex() >= 0 && index >= 0) {
                     renWin->initPointField(index, ui->compName->currentIndex(),
                                            FIELD_UPDATE);
+                    //  update the field switch status
+                    bool* status = renWin->getFieldSwtichStatus();
+                    ui->fieldName->setEnabled(status[0]);
+                    ui->compName->setEnabled(status[1]);
                 }
             });
     connect(ui->compName, &QComboBox::currentIndexChanged, this,
@@ -317,6 +353,10 @@ void pacnano::setupRenderWindow() {
                 if (ui->fieldName->currentIndex() >= 0 && index >= 0) {
                     renWin->initPointField(ui->fieldName->currentIndex(), index,
                                            FIELD_UPDATE);
+                    //  update the field switch status
+                    bool* status = renWin->getFieldSwtichStatus();
+                    ui->fieldName->setEnabled(status[0]);
+                    ui->compName->setEnabled(status[1]);
                 }
             });
 

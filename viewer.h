@@ -96,6 +96,7 @@ private:
     vtkAlgorithmOutput* portModelCur;              // current port for model
     vtkAlgorithmOutput* portFieldCur;              // current port for field
     vtkUnstructuredGrid* ugridFieldCur;            // current ugrid for field
+    vtkUnstructuredGrid* ugridModelCur;            // current ugrid for model
     vtkIdTypeArray* cellIdsCur;                    // currently selected cells
 
     vtkArrowSource* arrow;                         // arrow source object
@@ -108,6 +109,7 @@ private:
 
     int numIntervals;                              // number of legend intervals
     bool isAutoLegend;                             // auto legend range or not
+    bool fieldSwitchStatus[2];                     // the status of field switch
 
     char compName[3] = {'X', 'Y', 'Z'};            // component name
 
@@ -145,6 +147,10 @@ public:
     /*  showCompleteModel: reset the unstructured grid data to the original and
      *      show the model as current configuration  */
     void showCompleteModel();
+
+    /*  getFieldSwitchStatus: get the status of the field switch
+     *  @return  status: the status of the current field switch  */
+    bool* getFieldSwtichStatus();
 
 public:
     /*  showModel: display the geometry of the model
